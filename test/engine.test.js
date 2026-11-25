@@ -78,7 +78,8 @@ test('luck inputs move a year the right way', () => {
   const ones = VDEF.map(() => 1), half = VDEF.map(() => 0.5), up = VDEF.map(() => 1.2);
   const base = go(() => null), short = go(y => y === 5 ? { yieldF: half, priceF: ones } : null), pricey = go(y => y >= 8 ? { yieldF: ones, priceF: up } : null);
   assert.ok(short[5].prodCash < base[5].prodCash, 'a short crop costs less to make that year');
-  assert.ok(short.slice(6).reduce((a, r) => a + r.sold, 0) < base.slice(6).reduce((a, r) => a + r.sold, 0), 'and leaves less to sell later');
+  // sales are capped at each wine's yearly sell-through, so a short crop draws down the inventory backlog rather than cutting sales
+  assert.ok(short[P.Y].inv < base[P.Y].inv - 1000, 'and leaves less wine in inventory');
   assert.ok(pricey[8].rev > base[8].rev * 1.15, 'higher prices raise revenue');
   assert.strictEqual(base[7].rev, pricey[7].rev, 'but only from the year they start');
 });
