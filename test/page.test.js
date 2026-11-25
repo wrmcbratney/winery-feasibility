@@ -23,6 +23,13 @@ test('built page loads and interactions run', async () => {
   for (const r of ['year', 'vintage', 'harvest']) q(`[data-rng="${r}"]`).click();
   q('[data-unit="ves"]').click();
   $('scrub').value = 120; $('scrub').dispatchEvent(new w.Event('input'));
+  const before = +$('scrub').value;
+  w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true, bubbles: true }));
+  await new Promise(r => setTimeout(r, 50));
+  assert.strictEqual(+$('scrub').value, before + 7, 'shift + right arrow moves a week');
+  $('snap').querySelector('[data-loc="barrel"]').click();
+  assert.match($('snap').querySelector('.detail').textContent, /^Barrels:/, 'tapping a location pins its lot details');
+  assert.match($('laborNow').textContent, /hrs/);
   $('addVar').value = 'Syrah'; $('addWine').click();
   q('[data-d="fruit"][data-v="estate"]').click();
   q('[data-d="facility"][data-v="custom"]').click();
