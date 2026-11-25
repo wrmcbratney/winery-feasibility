@@ -470,66 +470,43 @@ function labor(V,G,sz,lab,simulate,FL){
   let peakDay=0;for(let d=0;d<365;d++)peakDay=Math.max(peakDay,Tsum[d]);
   return {tasks,harvestHrs:H,yearHrs:Yh,wmH,wmY,perms,partHrs,otHrs,seasonalHrs,seasonalHeads,cost,total,peakWeek:hW?H/hW:0,harvestWeeks:hW,peakDay,avail,WK};
 }
-function model(Vin,Gin,simulate){
+// ===== Year-step engine =====
+// plan(): everything decided at year 0 (equipment sized from the cellar flow, labor, lab, building, land, water, capital schedule).
+// stepYear(): one year of operations: harvest that year's vintage, sell from inventory (oldest first), book the year's costs.
+// finStep(): one year of cash, loan, equity and distributions.
+// model() wires them together for a fixed 20-year plan. Each year takes a "luck" input (yield and price factors per wine,
+// default 1) so variability and risk can be layered on without changing this structure.
+const tonsOf=v=>v.cases/v.cpt;
+const bearing=y=>y<3?0:y===3?0.3:y===4?0.7:1;
+function plan(Vin,Gin,simulate){
   const V=deepCopy(Vin),G=deepCopy(Gin),Y=G.years;
-  const tons=v=>v.cases/v.cpt;
-  const totCases=V.reduce((a,v)=>a+v.cases,0), allTons=V.reduce((a,v)=>a+tons(v),0);
+  const totCases=V.reduce((a,v)=>a+v.cases,0), allTons=V.reduce((a,v)=>a+tonsOf(v),0);
   const estate=G.fruit==='estate', own=G.facility==='build';
   if(!own)G.storage='offsite';
-  const acres=estate?V.reduce((a,v)=>a+tons(v)/v.tpa,0):0;
-  const bearing=y=>y<3?0:y===3?0.3:y===4?0.7:1;
+  const acres=estate?V.reduce((a,v)=>a+tonsOf(v)/v.tpa,0):0;
   const FL=getFlow()(V,G,simulate);
   const sz=own?size(V,G,simulate,FL):{items:[],equip:0,barrels:0};
   // ---- lab program ----
-  const lots=V.reduce((a,v)=>a+Math.max(1,Math.ceil(tons(v)/G.lotTons)),0);
+  const lots=V.reduce((a,v)=>a+Math.max(1,Math.ceil(tonsOf(v)/G.lotTons)),0);
   const tests=lots*G.testsPerLot, L=LAB[own?G.lab:'outsource'];
   const outShare=own?1-L.share:0.5; // custom crush covers about half of routine testing in its fee
   const labYear=tests*(outShare*G.testExt+(own?L.share:0)*(L.consum+L.hrs*G.labWage));
   const lab={lots,tests,outTests:tests*outShare,inTests:own?tests*L.share:0,cost:labYear,equip:L.equip,name:own?L.name:'Custom crush plus outside lab'};
   const lbr=own?labor(V,G,sz,lab,simulate,FL):null, laborCase=own?lbr.total/totCases:0;
-  // ---- vintages and sales first; the building is sized from them ----
-  const vint=[];const yearCost={fruit:Array(Y+1).fill(0),prod:Array(Y+1).fill(0),barrels:Array(Y+1).fill(0),dry:Array(Y+1).fill(0),farm:Array(Y+1).fill(0)};
-  for(let y=1;y<=Y;y++){
-    V.forEach((v,i)=>{
-      const t=tons(v), estT=estate?t*bearing(y):0, buyT=t-estT;
-      const fruit=buyT*v.grape, farm=estate&&bearing(y)>0?(t/v.tpa)*G.farmAcre:0;
-      const prod=own?v.cases*(G.suppliesCase+laborCase):v.cases*G.customCase;
-      const bbl=v.barrel>0?v.cases*2.4/59.4:0, newShare=v.newOak/100;
-      const stock=v.barrel>0?FL.bPeak[i]*G.barrelSpare:0;
-      const barrelCost=y===1?stock*(newShare*G.barrelNew+(1-newShare)*G.barrelUsed):bbl*(newShare*G.barrelNew+Math.max(0,0.2-newShare)*G.barrelUsed);
-      const dry=v.cases*(G.bottlePer*12+G.carton+G.bottling);
-      const relYear=y+Math.floor((9.5+v.release)/12), botYear=y+Math.floor((9.5+Math.min(bottleOf(v),v.release))/12);
-      yearCost.fruit[y]+=fruit;yearCost.farm[y]+=farm;yearCost.prod[y]+=prod;yearCost.barrels[y]+=barrelCost;if(botYear<=Y)yearCost.dry[botYear]+=dry;
-      vint.push({i,y,relYear,botYear,cases:v.cases,left:v.cases,cost:(fruit+farm+prod+barrelCost+dry)/v.cases});
-    });
-  }
   const shares=G.tasting?G.shareTR:G.shareNoTR;
   const netFactor=(shares[0]+shares[1]*(1-G.clubDisc/100)+shares[2]*G.wholesaleFactor/100)/100;
   const firstRel=V.map(v=>1+Math.floor((9.5+v.release)/12));
-  const sales=[];
-  for(let y=0;y<=Y;y++){
-    let rev=0,cogs=0,sold=0,dtcRev=0;
-    V.forEach((v,i)=>{
-      const k=y-firstRel[i]; if(k<0)return;
-      let cap=v.cases*(G.ramp[Math.min(k,G.ramp.length-1)]/100);
-      for(const vt of vint){if(vt.i!==i||vt.relYear>y||vt.left<=0||cap<=0)continue;const q=Math.min(vt.left,cap);vt.left-=q;cap-=q;sold+=q;
-        rev+=q*12*v.price*netFactor;dtcRev+=q*12*v.price*(shares[0]+shares[1]*(1-G.clubDisc/100))/100;cogs+=q*vt.cost}
-    });
-    const inv=vint.filter(vt=>vt.y<=y).reduce((a,vt)=>a+vt.left,0);
-    const bottled=vint.filter(vt=>vt.botYear<=y).reduce((a,vt)=>a+vt.left,0);
-    const bottledIn=vint.filter(vt=>vt.botYear===y).reduce((a,vt)=>a+vt.cases,0);
-    const invCost=vint.filter(vt=>vt.y<=y).reduce((a,vt)=>a+vt.left*vt.cost,0);
-    sales.push({rev,cogs,sold,dtcRev,inv,bottled,bottledIn,invCost});
-  }
-  const peakBottled=Math.max(...sales.map(s=>s.bottled));
-  // ---- facility ----
+  const P={V,G,Y,totCases,allTons,estate,own,acres,FL,sz,lab,lbr,laborCase,shares,netFactor,firstRel};
+  // ---- the building is sized from the plan's own inventory path, so run the plan's years once for the peak of bottled wine ----
+  let S=initState(P),peakBottled=0;
+  for(let y=0;y<=Y;y++){const r=stepYear(P,S,y);peakBottled=Math.max(peakBottled,r.sales.bottled)}
   const hasLabRoom=own&&G.lab!=='outsource';
   const bld=own?building(G,sz,peakBottled,hasLabRoom):{spaces:[],sqft:0,build:0,design:0,site:0,permits:0,total:0,T:TIERS[G.buildTier]};
   const capex=Array(Y+1).fill(0),capLines=[];
   const addCap=(y,amt,label)=>{if(y<=Y&&amt){capex[y]+=amt;capLines.push({y,amt,label})}};
   // ---- land: planted acres grossed up for roads, headlands and unplantable ground, plus the winery site, at least the zoning minimum ----
   const vineGross=acres/(G.plantablePct/100);
-  const siteAcres=own?Math.max(1,bld.sqft/(G.siteCoverage/100)/43560)*(G.buildTier==='gravity'?1.5:1):(G.tasting?0:0);
+  const siteAcres=own?Math.max(1,bld.sqft/(G.siteCoverage/100)/43560)*(G.buildTier==='gravity'?1.5:1):0;
   const need=vineGross+siteAcres, landAcres=need>0?Math.max(need,G.minParcel):0, spare=landAcres-need;
   // irrigated farmland only matters if there's a vineyard watered with the land's own right; otherwise the parcel can be dry ground
   const priceAcre=estate&&G.water!=='buyRight'?G.landAcre:G.dryLandAcre;
@@ -544,75 +521,116 @@ function model(Vin,Gin,simulate){
   addCap(0,sz.equip,'Cellar equipment'); addCap(10,sz.equip*0.5,'Equipment replacement');
   const vineDev=acres*(G.vineDevAcre+G.dripAcre); [0.6,0.25,0.15].forEach((f,i)=>addCap(i,vineDev*f,'Vineyard development'));
   for(let y=1;y<=2;y++)addCap(y,acres*G.farmAcre,'Pre-bearing farming');
-  // ---- years ----
-  const rows=[];
-  for(let y=0;y<=Y;y++){
-    const s=sales[y], b=1+G.burden/100;
-    const staff={
-      winemaker:y>=1&&G.owner==='hire'?G.wmSalary*b:0,
-      owner:G.owner==='winemaker'?G.ownerSalary:0,
-      admin:y>=1?G.adminCost:0,
-      tasting:G.tasting&&y>=Math.min(...firstRel)?G.trStaff:0
-    };
-    const assessed=land*Math.pow(1+G.landGrowth/100,y)+(y>=0?bld.build+bld.design+bld.site+sz.equip:0);
-    const fixed={
-      lease:G.tasting&&!own&&y>=Math.min(...firstRel)?G.trLease:0,
-      util:y>=1?G.utilBase+G.utilCase*totCases*(own?1:0.2):0,
-      insure:(capex.slice(0,y+1).reduce((a,c)=>a+c,0))*G.insurePct/100,
-      maint:own&&y>=1?(bld.build+sz.equip)*G.maintPct/100:0,
-      marketing:s.rev*G.marketingPct/100+(y>=1?15000:0),
-      fees:s.dtcRev*G.dtcFeePct/100,
-      propTax:assessed*G.propTaxPct/100,
-      storage:G.storage==='offsite'&&s.bottled+s.bottledIn>0?s.bottled*12*G.offsiteCaseMonth+(s.bottledIn+s.sold)*G.offsiteInOut/2+G.offsiteAdmin:0,
-      lab:y>=1?lab.cost:0,
-      water:y>=1?W.annual:0,
-      excise:exciseTax(s,G,shares)
-    };
-    const opex=Object.values(staff).reduce((a,c)=>a+c,0)+Object.values(fixed).reduce((a,c)=>a+c,0);
-    const prodCash=yearCost.fruit[y]+yearCost.farm[y]+yearCost.prod[y]+yearCost.barrels[y]+yearCost.dry[y];
-    rows.push({y,...s,staff,fixed,opex,prodCash,capex:capex[y],gross:s.rev-s.cogs});
-  }
   const dep=Array(Y+1).fill(0);
   for(let y=1;y<=Y;y++){dep[y]+=(bld.build+bld.design+bld.site+bld.permits)/30+sz.equip/10+(!own&&G.tasting?G.trFitout*0.4/10:0);if(y>=11)dep[y]+=sz.equip*0.5/10;if(estate&&y>=3)dep[y]+=(vineDev+2*acres*G.farmAcre)/25}
-  rows.forEach(r=>{r.ebitda=r.rev-r.cogs-r.opex;r.dep=dep[r.y];r.ebit=r.ebitda-r.dep});
-  const eligible=capex.slice(0,3).reduce((a,c)=>a+c,0);
   const building0=bld.build+bld.design+bld.site+bld.permits;
-  const fin={cash:finance(rows,G,0,land,building0,sz,acres,vineDev),loan:finance(rows,G,eligible*G.loanLTV/100,land,building0,sz,acres,vineDev)};
-  return {rows,fin,sz,bld,lab,lbr,FL,W,LD,acres,landAcres,land,capexTotal:capex.reduce((a,c)=>a+c,0),capLines,netFactor,totCases,allTons,firstRel,peakBottled,V,G};
+  return Object.assign(P,{peakBottled,bld,capex,capLines,LD,landAcres,W,land,vineDev,dep,building0,eligible:capex.slice(0,3).reduce((a,c)=>a+c,0)});
 }
-function finance(rows,G,loanAmt,land,building,sz,acres,vineDev){
-  const Y=G.years, r=G.loanRate/100, n=G.loanTerm;
-  const pmt=loanAmt>0?loanAmt*r/(1-Math.pow(1+r,-n)):0;
-  let bal=loanAmt,cash=0,cum=0,equityTot=0;const out=[];
-  for(const row of rows){
-    const y=row.y;
-    const interest=bal*r, principal=y>=1&&bal>0?Math.min(bal,pmt-interest):0;
-    const intPaid=y>=1?interest:0; // interest during build year capitalized into the draw, kept simple
-    const cfo=row.rev-row.opex-row.prodCash-intPaid;
-    const draw=y===0?loanAmt:0;
-    let c=cash+cfo-row.capex+draw-principal;
-    let equity=0; if(c<G.reserve){equity=G.reserve-c;c=G.reserve}
-    let dist=0; const ds=pmt;
-    const dscr=y>=1&&ds>0?(row.rev-row.opex-row.prodCash)/ds:null;
-    if(y>=2&&cfo>0&&c>G.reserve*2&&equity===0){dist=(c-G.reserve*2)*G.distPct/100;c-=dist}
-    bal-=principal; cash=c; equityTot+=equity;
-    const ownerSal=row.staff.owner;
-    const ownerCF=-equity+dist+ownerSal;
-    cum+=ownerCF;
-    const ebt=row.ebit-intPaid;
-    out.push({y,cfo,equity,dist,ownerSal,ownerCF,cum,cash,bal,interest:intPaid,principal,dscr,ebt});
-  }
+// State carried from year to year: inventory by vintage, dry goods owed for future bottlings, capital spent so far.
+function initState(P){return {vint:[],dryDue:{},capSpent:0}}
+// One year. luck = {yieldF:[per wine], priceF:[per wine]}; defaults leave the plan unchanged.
+function stepYear(P,S,y,luck){
+  const {V,G,estate,own,laborCase,shares,netFactor,firstRel,FL}=P;
+  const yf=i=>luck&&luck.yieldF?luck.yieldF[i]:1, pf=i=>luck&&luck.priceF?luck.priceF[i]:1;
+  let fruitC=0,farmC=0,prodC=0,barrelC=0;
+  // ---- harvest this year's vintage ----
+  if(y>=1)V.forEach((v,i)=>{
+    const t=tonsOf(v)*yf(i), cases=v.cases*yf(i), estT=estate?t*bearing(y):0, buyT=t-estT;
+    const fruit=buyT*v.grape, farm=estate&&bearing(y)>0?(tonsOf(v)/v.tpa)*G.farmAcre:0;
+    const prod=own?cases*(G.suppliesCase+laborCase):cases*G.customCase;
+    const bbl=v.barrel>0?cases*2.4/59.4:0, newShare=v.newOak/100;
+    const stock=v.barrel>0?FL.bPeak[i]*G.barrelSpare:0;
+    const barrelCost=y===1?stock*(newShare*G.barrelNew+(1-newShare)*G.barrelUsed):bbl*(newShare*G.barrelNew+Math.max(0,0.2-newShare)*G.barrelUsed);
+    const dry=cases*(G.bottlePer*12+G.carton+G.bottling);
+    const relYear=y+Math.floor((9.5+v.release)/12), botYear=y+Math.floor((9.5+Math.min(bottleOf(v),v.release))/12);
+    fruitC+=fruit;farmC+=farm;prodC+=prod;barrelC+=barrelCost;S.dryDue[botYear]=(S.dryDue[botYear]||0)+dry;
+    S.vint.push({i,y,relYear,botYear,cases,left:cases,cost:cases?(fruit+farm+prod+barrelCost+dry)/cases:0});
+  });
+  // ---- sell, oldest vintage first, up to this year's sell-through for each wine ----
+  let rev=0,cogs=0,sold=0,dtcRev=0;
+  V.forEach((v,i)=>{
+    const k=y-firstRel[i]; if(k<0)return;
+    let cap=v.cases*(G.ramp[Math.min(k,G.ramp.length-1)]/100);
+    for(const vt of S.vint){if(vt.i!==i||vt.relYear>y||vt.left<=0||cap<=0)continue;const q=Math.min(vt.left,cap);vt.left-=q;cap-=q;sold+=q;
+      rev+=q*12*v.price*pf(i)*netFactor;dtcRev+=q*12*v.price*pf(i)*(shares[0]+shares[1]*(1-G.clubDisc/100))/100;cogs+=q*vt.cost}
+  });
+  const inv=S.vint.reduce((a,vt)=>a+vt.left,0);
+  const bottled=S.vint.filter(vt=>vt.botYear<=y).reduce((a,vt)=>a+vt.left,0);
+  const bottledIn=S.vint.filter(vt=>vt.botYear===y).reduce((a,vt)=>a+vt.cases,0);
+  const invCost=S.vint.reduce((a,vt)=>a+vt.left*vt.cost,0);
+  const sales={rev,cogs,sold,dtcRev,inv,bottled,bottledIn,invCost};
+  const dryC=S.dryDue[y]||0;
+  if(!P.bld)return {sales}; // forecast pass inside plan(): inventory only
+  // ---- the year's costs ----
+  const {bld,sz,lab,W,land,capex,dep,totCases}=P, b=1+G.burden/100, open=y>=Math.min(...firstRel);
+  S.capSpent+=capex[y];
+  const staff={
+    winemaker:y>=1&&G.owner==='hire'?G.wmSalary*b:0,
+    owner:G.owner==='winemaker'?G.ownerSalary:0,
+    admin:y>=1?G.adminCost:0,
+    tasting:G.tasting&&open?G.trStaff:0
+  };
+  const assessed=land*Math.pow(1+G.landGrowth/100,y)+bld.build+bld.design+bld.site+sz.equip;
+  const fixed={
+    lease:G.tasting&&!own&&open?G.trLease:0,
+    util:y>=1?G.utilBase+G.utilCase*totCases*(own?1:0.2):0,
+    insure:S.capSpent*G.insurePct/100,
+    maint:own&&y>=1?(bld.build+sz.equip)*G.maintPct/100:0,
+    marketing:rev*G.marketingPct/100+(y>=1?15000:0),
+    fees:dtcRev*G.dtcFeePct/100,
+    propTax:assessed*G.propTaxPct/100,
+    storage:G.storage==='offsite'&&bottled+bottledIn>0?bottled*12*G.offsiteCaseMonth+(bottledIn+sold)*G.offsiteInOut/2+G.offsiteAdmin:0,
+    lab:y>=1?lab.cost:0,
+    water:y>=1?W.annual:0,
+    excise:exciseTax(sales,G,shares)
+  };
+  const opex=Object.values(staff).reduce((a,c)=>a+c,0)+Object.values(fixed).reduce((a,c)=>a+c,0);
+  const prodCash=fruitC+farmC+prodC+barrelC+dryC;
+  const row={y,...sales,staff,fixed,opex,prodCash,capex:capex[y],gross:rev-cogs};
+  row.ebitda=row.rev-row.cogs-row.opex;row.dep=dep[y];row.ebit=row.ebitda-row.dep;
+  return {sales,row};
+}
+function model(Vin,Gin,simulate){
+  const P=plan(Vin,Gin,simulate),S=initState(P),rows=[];
+  for(let y=0;y<=P.Y;y++)rows.push(stepYear(P,S,y).row);
+  const fin={cash:finance(rows,P,0),loan:finance(rows,P,P.eligible*P.G.loanLTV/100)};
+  const {sz,bld,lab,lbr,FL,W,LD,acres,landAcres,land,capLines,netFactor,totCases,allTons,firstRel,peakBottled,V,G}=P;
+  return {rows,fin,sz,bld,lab,lbr,FL,W,LD,acres,landAcres,land,capexTotal:P.capex.reduce((a,c)=>a+c,0),capLines,netFactor,totCases,allTons,firstRel,peakBottled,V,G,P};
+}
+// ---- financing, one year at a time ----
+function finInit(P,loanAmt){const G=P.G,r=G.loanRate/100,n=G.loanTerm;return {loanAmt,r,pmt:loanAmt>0?loanAmt*r/(1-Math.pow(1+r,-n)):0,bal:loanAmt,cash:0,cum:0,equityTot:0,out:[]}}
+function finStep(P,F,row){
+  const G=P.G,y=row.y;
+  const interest=F.bal*F.r, principal=y>=1&&F.bal>0?Math.min(F.bal,F.pmt-interest):0;
+  const intPaid=y>=1?interest:0; // interest during build year capitalized into the draw, kept simple
+  const cfo=row.rev-row.opex-row.prodCash-intPaid;
+  const draw=y===0?F.loanAmt:0;
+  let c=F.cash+cfo-row.capex+draw-principal;
+  let equity=0; if(c<G.reserve){equity=G.reserve-c;c=G.reserve}
+  let dist=0;
+  const dscr=y>=1&&F.pmt>0?(row.rev-row.opex-row.prodCash)/F.pmt:null;
+  if(y>=2&&cfo>0&&c>G.reserve*2&&equity===0){dist=(c-G.reserve*2)*G.distPct/100;c-=dist}
+  F.bal-=principal; F.cash=c; F.equityTot+=equity;
+  const ownerSal=row.staff.owner, ownerCF=-equity+dist+ownerSal;
+  F.cum+=ownerCF;
+  const o={y,cfo,equity,dist,ownerSal,ownerCF,cum:F.cum,cash:c,bal:F.bal,interest:intPaid,principal,dscr,ebt:row.ebit-intPaid};
+  F.out.push(o);return o;
+}
+function finance(rows,P,loanAmt){
+  const G=P.G,Y=G.years,F=finInit(P,loanAmt);
+  for(const row of rows)finStep(P,F,row);
+  const out=F.out,{land,building0:building,sz,acres,vineDev}=P;
   // terminal value at year Y: land appreciated + undepreciated assets + inventory at cost + cash - debt
   const last=rows[rows.length-1];
   const landVal=land*Math.pow(1+G.landGrowth/100,Y);
   const bookBuild=Math.max(0,building)*(1-Y/30)+sz.equip*0.5*(1-(Y-10)/10)+(acres?(vineDev)*(1-(Y-3)/25):0);
-  const tv=landVal+bookBuild+last.invCost+cash-bal;
+  const tv=landVal+bookBuild+last.invCost+F.cash-F.bal;
   const flows=out.map(o=>o.ownerCF);flows[Y]+=tv;
   const irr=IRR(flows), npv=flows.reduce((a,f,i)=>a+f/Math.pow(1+G.discount/100,i),0);
   const firstProfit=out.find(o=>o.y>=1&&o.ebt>0&&out.slice(o.y).every(p=>p.ebt>0));
   const payback=out.find(o=>o.cum>=0&&o.y>0&&out.slice(o.y).every(p=>p.cum>=0));
   const late=out.filter(o=>o.y>Y-10);
-  return {out,loanAmt,pmt,equityTot,peak:-Math.min(...out.map(o=>o.cum)),tv,irr,npv,firstProfit:firstProfit?firstProfit.y:null,payback:payback?payback.y:null,
+  return {out,loanAmt,pmt:F.pmt,equityTot:F.equityTot,peak:-Math.min(...out.map(o=>o.cum)),tv,irr,npv,firstProfit:firstProfit?firstProfit.y:null,payback:payback?payback.y:null,
     avgPayout:late.reduce((a,o)=>a+o.dist+o.ownerSal,0)/late.length,
     minDscr:(()=>{const s=rows.findIndex(r=>r.sold>=0.9*rows[rows.length-1].sold&&r.y>0);const d=out.filter(o=>o.dscr!=null&&o.y>=s).map(o=>o.dscr);return d.length?Math.min(...d):null})(),
     weakYears:out.filter(o=>o.dscr!=null&&o.dscr<1.25).length};

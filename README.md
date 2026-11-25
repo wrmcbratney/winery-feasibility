@@ -13,7 +13,7 @@ The page has two tabs:
 |---|---|
 | `src/core.js` | Fermentation and malolactic kinetics for one lot (Boulton-style: nitrogen-limited growth, Monod sugar uptake, ethanol inhibition, heat balance, ML timing against cellar temperature). Shared with the standalone Winery Lot Simulator. |
 | `src/flow.js` | Lot plan for every wine, the steady-state cellar calendar (gallons and vessels by location), and the daily work and equipment calendar. |
-| `src/fin.js` | Variety presets, defaults, equipment sizing from the flow, building by space, land, water, lab, labor, excise, the 20-year model and financing. |
+| `src/fin.js` | Variety presets, defaults, equipment sizing from the flow, building by space, land, water, lab, labor and excise. The engine is year-stepped: `plan()` makes the year-0 decisions and capital schedule, `stepYear()` runs one year (harvest the vintage, sell oldest first, book costs) with an optional luck input for yield and price, and `finStep()` runs one year of cash, loan, equity and distributions. `model()` chains them for a fixed 20-year plan. |
 | `src/sources.js` | The assumptions table: value, basis, confidence, link. |
 | `src/index.src.html` | The page. Placeholders `/*CORE*/`, `/*FIN*/`, `/*SRC*/`, `/*FLOW*/` are filled by the build. |
 | `build.py` | Inlines the engine into `dist/index.html`, a single self-contained page. |

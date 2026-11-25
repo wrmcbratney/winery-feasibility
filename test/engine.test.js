@@ -61,3 +61,24 @@ test('every variety preset runs on its own', () => {
     assert.ok(Number.isFinite(m.fin.cash.equityTot), n);
   }
 });
+
+test('stepping year by year reproduces model()', () => {
+  const { plan, initState, stepYear } = require('../src/fin.js');
+  const m = run({ fruit: 'estate' }), P = plan(VDEF, { ...GDEF, fruit: 'estate' }, simulate), S = initState(P);
+  for (let y = 0; y <= P.Y; y++) {
+    const r = stepYear(P, S, y).row;
+    assert.ok(Math.abs(r.rev - m.rows[y].rev) < 1e-6 && Math.abs(r.opex - m.rows[y].opex) < 1e-6 && Math.abs(r.prodCash - m.rows[y].prodCash) < 1e-6, `year ${y}`);
+  }
+});
+
+test('luck inputs move a year the right way', () => {
+  const { plan, initState, stepYear } = require('../src/fin.js');
+  const P = plan(VDEF, GDEF, simulate);
+  const go = luckAt => { const S = initState(P), rows = []; for (let y = 0; y <= P.Y; y++) rows.push(stepYear(P, S, y, luckAt(y)).row); return rows };
+  const ones = VDEF.map(() => 1), half = VDEF.map(() => 0.5), up = VDEF.map(() => 1.2);
+  const base = go(() => null), short = go(y => y === 5 ? { yieldF: half, priceF: ones } : null), pricey = go(y => y >= 8 ? { yieldF: ones, priceF: up } : null);
+  assert.ok(short[5].prodCash < base[5].prodCash, 'a short crop costs less to make that year');
+  assert.ok(short.slice(6).reduce((a, r) => a + r.sold, 0) < base.slice(6).reduce((a, r) => a + r.sold, 0), 'and leaves less to sell later');
+  assert.ok(pricey[8].rev > base[8].rev * 1.15, 'higher prices raise revenue');
+  assert.strictEqual(base[7].rev, pricey[7].rev, 'but only from the year they start');
+});
