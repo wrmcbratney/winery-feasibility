@@ -5,73 +5,99 @@ const LOCS=[['pad','Crush pad'],['press','Press'],['redTank','Red ferment tanks'
 const UNIT={pad:['bin','bins'],press:['press load','press loads'],redTank:['tank','tanks'],whiteTank:['tank','tanks'],storage:['tank','tanks'],blend:['tank','tanks'],barrel:['barrel','barrels'],bottled:['pallet','pallets']};
 const AUG1=213, MIDOCT=288-213, MO=30.44, GAL_CASE=2.378, BBL=59.4, STD_TANK=[500,750,1000,1500,2000,2500,3000,4000,5000,6000,8000];
 const flowCache={};
-function lotSim(v,tons,pick,simulate){
-  const k=[v.brix,v.soak,v.setF,v.ext,pick,tons.toFixed(2)].join();
-  if(!flowCache[k])flowCache[k]=simulate({tons,brix:v.brix,yan:180,dapDay:-1,dapAmt:60,soakDays:v.soak??3,soakF:50,fruitF:65,setF:v.setF??85,coolBTU:6800,vessel:'tank',ambF:62,swingF:0,emDays:v.ext??0,yeast:'robust',
-   malic:2.5,ml:'seq',mlHeat:false,mlHeatF:68,winterF:52,summerF:68,barrelF:58,harvestDOY:pick,pressLoad:5,pressCycle:3,
-   binTons:0.5,crushRate:8,setupHrs:1.5,sort:'hand',mustGal:180,headspace:20,freeRun:115,pressGal:45,leesPct:4,pressHandling:'blend',barrelRule:'spring',settleDays:10});
+const _X=typeof exception==='function'?{exception}:require('./exceptions.js');
+const _W=typeof lotParams==='function'?{wineryFor,lotParams,crushHours,jacketBTU,PRESS_CYCLE_HRS,SORT_LABOR}:require('./winery.js');
+function lotSim(v,tons,pick,W,simulate){
+  const p=_W.lotParams(v,tons,pick,W),k=JSON.stringify(p);
+  if(!flowCache[k])flowCache[k]=simulate(p);
   return flowCache[k];
 }
+const stdTank=gal=>STD_TANK.find(s=>s>=gal)||STD_TANK[STD_TANK.length-1];
 function lotPlan(V,G,simulate){
-  const lots=[], short={}, allTons=V.reduce((a,v)=>a+v.cases/v.cpt,0), pressT=allTons>60?8:allTons>25?5:3;
+  const lots=[], short={}, exc=[], seen=new Set(), flag=(key,cls,o)=>{if(!seen.has(key)){seen.add(key);exc.push(_X.exception(cls,o))}};
+  // red ferment tank size first (it depends only on lot volume), so each lot's jacket cooling comes from the tank it sits in
+  const split=v=>{const tons=v.cases/v.cpt,n=Math.max(1,Math.ceil(tons/G.lotTons-1e-9));return {tons,n,lt:tons/n}};
+  const W0=_W.wineryFor(V,G,0);
+  const redGal=Math.max(0,...V.filter(v=>v.color==='red').map(v=>{const {lt}=split(v),q=_W.lotParams(v,lt,0,W0);return lt*q.mustGal*(1+q.headspace/100)}));
+  const W=_W.wineryFor(V,G,redGal?stdTank(redGal):0), pressT=W.press.tons;
   V.forEach((v,wi)=>{
-    const tons=v.cases/v.cpt, n=Math.max(1,Math.ceil(tons/G.lotTons-1e-9)), lt=tons/n, cases=v.cases/n;
+    const {n,lt}=split(v), cases=v.cases/n;
     const bm=Math.min(v.bottle??(v.barrel>0?Math.round((v.color==='red'?6:0.5)+v.barrel+1):5),v.release),bottle=MIDOCT+bm*MO, release=MIDOCT+v.release*MO;
     for(let j=0;j<n;j++){
       const pick=(v.pick??270)+j*2, p=pick-AUG1, S=[];
       const seg=(loc,a,b,gal,units,x)=>{if(b>a)S.push({loc,a:p+a,b:p+b,gal,units,...x})};
       const ev=(loc,a,gal,units)=>S.push({loc,a:p+a,b:p+a+1,gal,units,ev:true});
-      const bot=bottle-p, rel=release-p, bl=bot-21, wineGal=v.cases*GAL_CASE*1.03, bins=Math.ceil(lt/0.5-1e-9), loads=Math.ceil(lt/pressT-1e-9);
+      const bot=bottle-p, bl=bot-21, wineGal=v.cases*GAL_CASE*1.03, bins=Math.ceil(lt/0.5-1e-9), loads=Math.ceil(lt/pressT-1e-9);
+      // barrel time as set, unless bottling cuts it short; a gap under 60 days before blending is absorbed into barrel
+      // time rather than a short tank stay. Either way it is a change to how the wine is made, so it is reported.
+      const barrelOut=(inDay,wantGal)=>{
+        let out=Math.min(inDay+v.barrel*MO,bl);
+        if(inDay+v.barrel*MO>bl+7){short[wi]=(bl-inDay)/MO;
+          flag('short'+wi,'method',{constraint:'Bottling date',wine:v.name,process:'Barrel aging',what:`bottles before its barrel time is up: about ${Math.round((bl-inDay)/MO)} of ${v.barrel} months in barrel`,consequences:'less oak and less time on lees than intended',remedies:'move bottling later in the wine table, or accept the shorter barrel time'})}
+        if(bl-out<60&&bl>out){
+          flag('ext'+wi,'method',{constraint:'Blending date',wine:v.name,process:'Barrel aging',what:`barrel time extended from ${v.barrel} to about ${((bl-inDay)/MO).toFixed(1)} months, so the wine goes straight from barrel to blending instead of spending ${Math.round(bl-out)} days in a lot tank`,consequences:'more oak contact and barrels held longer than set',remedies:'set bottling so the barrel time ends at blending, or allow a short tank stay'});
+          out=bl}
+        return out;
+      };
+      let crushHrs,pressHrs;
       if(v.color==='red'){
-        const r=lotSim(v,lt,pick,simulate);
-        const pressDay=r.pressDay??20, pressEnd=r.pressEnd??20.2, gal=r.gal??lt*160, bg=r.barrelGal??gal*0.96;
-        const barrelDay=Math.min(r.barrelDay??200,bot-30);
-        ev('pad',0,r.mustGal,bins);seg('redTank',0,pressEnd,r.tankGal);ev('press',Math.floor(pressDay),gal,loads);
-        if(v.barrel>0){seg('storage',pressEnd,barrelDay,gal);let out=Math.min(barrelDay+v.barrel*MO,bl);if(barrelDay+v.barrel*MO>bl+7)short[wi]=(bl-barrelDay)/MO;if(bl-out<60)out=bl;seg('barrel',barrelDay,out,bg,Math.ceil(bg/BBL-1e-9));seg('storage',out,bl,bg)}
-        else seg('storage',pressEnd,bl,gal);
+        const q=_W.lotParams(v,lt,pick,W), nT=Math.ceil(lt*q.mustGal*(1+q.headspace/100)/W.redTankGal-1e-9), r=lotSim(v,lt,pick,{...W,coolBTU:nT*W.coolBTU},simulate);
+        if(r.stuck)flag('stuck'+wi+'|'+j,'method',{constraint:'Fermentation kinetics',wine:v.name,lot:j,process:'Primary fermentation',what:`did not finish: ${Math.round(r.S)} g/L sugar left after ${Math.round(r.pressDay)} days`,consequences:'the lot holds its fermenter to the end of the simulated window and is pressed with sugar left, so that tank turns over late and the wine is exposed until it is restarted',remedies:'pick at lower Brix, add nutrients, warm the tank, or restart with an acclimated yeast'});
+        if(r.mlStuck)flag('ml'+wi+'|'+j,'method',{constraint:'Malolactic kinetics',wine:v.name,lot:j,process:'Malolactic fermentation',what:'did not finish within 300 days of pressing',consequences:'malic acid left in the wine going to barrel',remedies:'reinoculate, warm the wine, or check SO2 and pH'});
+        if(r.barrelForced)flag('bf'+wi+'|'+j,'reschedule',{constraint:'Cellar temperature',wine:v.name,lot:j,process:'Barrel down',what:'the cellar never reached the barrel-down temperature, so the lot went to barrel 300 days after pressing',consequences:'the lot tank is held all winter and spring',remedies:'heat the cellar or move to barrel on a date instead of a temperature'});
+        const barrelDay=Math.min(r.barrelDay,bot-30), bg=r.barrelGal;
+        ev('pad',0,r.mustGal,bins);seg('redTank',0,r.pressEnd,r.tankGal);ev('press',Math.floor(r.pressDay),r.gal,loads);
+        if(v.barrel>0){seg('storage',r.pressEnd,barrelDay,r.gal);const out=barrelOut(barrelDay);seg('barrel',barrelDay,out,bg,Math.ceil(bg/BBL-1e-9));seg('storage',out,bl,bg)}
+        else seg('storage',r.pressEnd,bl,r.gal);
         seg('blend',bl,bot,bg,null,{wine:wineGal,n});
+        crushHrs=_W.crushHours(lt,'red',W.sort);pressHrs=r.pressHrs;
       }else{
         const juice=lt*170;
         ev('pad',0,lt*180,bins);ev('press',0,juice,loads);seg('whiteTank',0,2,juice*1.1);
-        if(v.barrel>0){let out=Math.min(2+v.barrel*MO,bl);if(2+v.barrel*MO>bl+7)short[wi]=(bl-2)/MO;if(bl-out<60)out=bl;seg('barrel',2,out,juice*0.96,Math.ceil(juice*0.96/BBL-1e-9));seg('storage',out,bl,juice*0.94)}
+        if(v.barrel>0){const out=barrelOut(2);seg('barrel',2,out,juice*0.96,Math.ceil(juice*0.96/BBL-1e-9));seg('storage',out,bl,juice*0.94)}
         else{seg('whiteTank',2,21,juice*1.1);seg('storage',21,bl,juice*0.96)}
         seg('blend',bl,bot,juice*0.94,null,{wine:wineGal,n});
+        crushHrs=_W.crushHours(lt,'white',W.sort);pressHrs=loads*_W.PRESS_CYCLE_HRS.white;
       }
-      const bg=cases*GAL_CASE;
+      const bg=cases*GAL_CASE, rel=release-p;
       seg('bottled',bot,rel,bg,cases/56);
       for(let q=0;q<12;q++){const f=1-(q+0.5)/12;seg('bottled',rel+q*MO,rel+(q+1)*MO,bg*f,cases*f/56)}
-      const rr=v.color==='red'?lotSim(v,lt,pick,simulate):null;
-      lots.push({wi,name:v.name,j,n,tons:lt,cases,wineCases:v.cases,pick,p,color:v.color,segs:S,bottle,release,bins,loads,
-        crushHrs:rr?(rr.crushHrs??lt/8+1.5):lt/8+0.5,pressHrs:rr?(rr.pressHrs??loads*3):loads*3.5,mustGal:lt*180});
+      lots.push({wi,name:v.name,j,n,tons:lt,cases,wineCases:v.cases,pick,p,color:v.color,segs:S,bottle,release,bins,loads,crushHrs,pressHrs,mustGal:lt*180});
     }
   });
-  return {lots,pressT,short};
+  return {lots,pressT,short,exceptions:exc,winery:W};
 }
 function flow(V,G,simulate){
-  const {lots:base,pressT,short}=lotPlan(V,G,simulate), kk=Math.max(1,G.lotsPerTank||1), D=365*4;
+  const {lots:base,pressT,short,exceptions,winery}=lotPlan(V,G,simulate), kk=Math.max(1,G.lotsPerTank||1);
+  // enough overlaid vintages that every lot's whole life, from pick to the last case sold, lands in the normal-year window
+  const maxEnd=Math.max(...base.flatMap(L=>L.segs.map(s=>s.b))), K=Math.max(3,Math.floor(maxEnd/365)), D=Math.max(365*4,Math.ceil((maxEnd+1)/365)*365);
   // one tank size per tank type: the smallest standard size that holds the largest lot there
-  const size={};['redTank','whiteTank','storage','blend'].forEach(k=>{const mx=Math.max(0,...base.flatMap(l=>l.segs.filter(s=>s.loc===k).map(s=>k==='blend'?Math.min(s.wine,8000):k==='storage'?s.gal*Math.min(kk,l.n):s.gal)));size[k]=STD_TANK.find(s=>s>=mx)||STD_TANK[STD_TANK.length-1]});
-  base.forEach(l=>l.segs.forEach(s=>{if(s.loc==='storage')s.units=1/Math.min(kk,l.n);else if(s.units==null)s.units=s.loc==='blend'?Math.ceil(s.wine/size.blend-1e-9)/s.n:Math.ceil(s.gal/size[s.loc]-1e-9)}));
+  const size={};['redTank','whiteTank','storage','blend'].forEach(k=>{const mx=Math.max(0,...base.flatMap(l=>l.segs.filter(s=>s.loc===k).map(s=>k==='blend'?Math.max(s.wine,s.gal*s.n):k==='storage'?s.gal*Math.min(kk,l.n):s.gal)));size[k]=stdTank(mx)});
+  base.forEach(l=>l.segs.forEach(s=>{if(s.loc==='storage')s.units=1/Math.min(kk,l.n);else if(s.units==null)// a blend tank holds what actually arrives from barrel or tank, which until the lot ledger exists can exceed the finished volume
+    s.units=s.loc==='blend'?Math.ceil(Math.max(s.wine,s.gal*s.n)/size.blend-1e-9)/s.n:Math.ceil(s.gal/size[s.loc]-1e-9)}));
   const mk=()=>{const o={};LOCS.forEach(([k])=>o[k]=new Float64Array(D));return o};
   const lanes=mk(),lanes0=mk(),ves=mk(),ves0=mk(),bWine=V.map(()=>new Float64Array(D)),grp={};
-  for(let k=-3;k<=1;k++)base.forEach(L=>L.segs.forEach(s=>{
+  for(let k=-K;k<=1;k++)base.forEach(L=>L.segs.forEach(s=>{
     const a=s.a+365*k,b=s.b+365*k;
     for(let d=Math.max(0,Math.floor(a));d<Math.min(D,Math.ceil(b));d++){
       const w=s.ev?1:Math.min(b,d+1)-Math.max(a,d);if(w<=0)continue;
       lanes[s.loc][d]+=s.gal*w;if(k===0)lanes0[s.loc][d]+=s.gal*w;
       // a vessel counts as in use on any day it holds wine, so on a transfer day both vessels count
       const u=s.loc==='bottled'?s.units*w:s.units;
-      if(s.loc==='storage'){if(u){const g=grp[L.wi+'|'+k]||(grp[L.wi+'|'+k]=new Float64Array(D));g[d]+=u}}else{ves[s.loc][d]+=u;if(k===0)ves0[s.loc][d]+=u;}
+      if(s.loc==='storage'){if(u){const g=grp[L.wi+'|'+k]||(grp[L.wi+'|'+k]={u:new Float64Array(D),gal:new Float64Array(D)});g.u[d]+=u;g.gal[d]+=s.gal}}else{ves[s.loc][d]+=u;if(k===0)ves0[s.loc][d]+=u;}
       if(s.loc==='barrel'&&u)bWine[L.wi][d]+=u;
     }
   }));
-  for(const key in grp){const g=grp[key],k0=key.endsWith('|0');for(let d=0;d<D;d++)if(g[d]>0){const n=Math.ceil(g[d]-1e-9);ves.storage[d]+=n;if(k0)ves0.storage[d]+=n}}
+  // lots of one wine share lot tanks up to lotsPerTank, but never more wine than the tanks hold
+  for(const key in grp){const g=grp[key],k0=key.endsWith('|0');for(let d=0;d<D;d++)if(g.u[d]>0){const n=Math.max(Math.ceil(g.u[d]-1e-9),Math.ceil(g.gal[d]/size.storage-1e-9));ves.storage[d]+=n;if(k0)ves0.storage[d]+=n}}
   const peak=(a)=>{let mx=0,at=0;for(let d=0;d<365;d++)if(a[d]>mx){mx=a[d];at=d}return{v:mx,at}};
   const need={};LOCS.forEach(([k])=>need[k]=peak(ves[k]));
   const bPeak=bWine.map(a=>peak(a).v);
   const end=Math.max(...base.map(L=>L.release+365));
   const installedB=Math.ceil(need.barrel.v*(G.barrelSpare||1.05)-1e-9);let emptyBarrelDays=0;for(let d=0;d<365;d++)emptyBarrelDays+=Math.max(0,installedB-ves.barrel[d]);
-  return {lots:base,lanes,lanes0,ves,ves0,size,need,bPeak,pressT,D,end,short,emptyBarrelDays};
+  // installed barrels are the combined peak plus spares; each wine's share of them follows its own peak
+  const sumB=bPeak.reduce((a,b)=>a+b,0), bStock=bPeak.map(b=>sumB?installedB*b/sumB:0);
+  return {lots:base,lanes,lanes0,ves,ves0,size,need,bPeak,bStock,installedB,pressT,D,K,end,short,exceptions,winery,emptyBarrelDays};
 }
 
 // Daily cellar work and equipment time, built lot by lot from the same calendar as the flow.
@@ -80,7 +106,7 @@ const EQUIP=[['crushline','Sorting and destemming line'],['press','Press'],['mus
 function work(FL,V,G,sz){
   const D=FL.D,mk=K=>Object.fromEntries(K.map(([k])=>[k,new Float64Array(D)]));
   const T=mk(TASKS),T0=mk(TASKS),E=mk(EQUIP),E0=mk(EQUIP);
-  const sortH={none:1,hand:2.5,optical:1.3}[G.sort]||2.5,grav=G.buildTier==='gravity',GPH=3000,perHr=G.bottlePerDay/8;
+  const sortH=_W.SORT_LABOR[G.sort]??2.5,grav=G.buildTier==='gravity',GPH=3000,perHr=G.bottlePerDay/8;
   const put=(A,A0,key,d,h,k)=>{d=Math.floor(d);if(d<0||d>=D||!(h>0))return;A[key][d]+=h;if(k===0)A0[key][d]+=h};
   const spread=(A,A0,key,a,b,h,k)=>{if(!(h>0))return;for(let d=Math.max(0,Math.floor(a));d<Math.min(D,Math.ceil(b));d++){const w=Math.min(b,d+1)-Math.max(a,d);if(w>0){A[key][d]+=h*w;if(k===0)A0[key][d]+=h*w}}};
   for(let k=-3;k<=1;k++){const o=365*k;FL.lots.forEach(L=>{

@@ -179,7 +179,7 @@ kbd{font:12px/1 ui-monospace,monospace;border:1px solid var(--rule);border-botto
     <p><b>Empty barrels.</b> Barrels sit empty between the old vintage coming out and the new one going in after ML. The model counts empty barrel-days from the flow and adds sulfuring every six weeks to the labor, and the equipment list carries a barrel washing station, a hot-water pressure washer to drive it, a sulfur kit and, if chosen, an ozone generator. Racks cover every installed barrel, full or empty.</p>
     <p><b>Cellar flow.</b> Each wine is split into lots of the chosen size, picked one every two days from the variety's typical Washington start date. Reds run through the lot simulator for their own pick date: days in the ferment tank, press, then ML in a storage tank until the cellar warms in spring, then barrel for the months set, back to tank before bottling. Whites settle two days, ferment in tank or go to barrel, then wait in tank for bottling. Bottled wine waits for release and sells evenly over the following year. Several identical vintages are laid on top of each other, so a normal year shows older wine still in barrel and bottle while the new one comes in. Tank lines count tank space including headspace during fermentation.</p>
     <p><b>Daily labor and equipment.</b> The flow calendar also drives the work. Each lot adds its pick-day crew and sorting, press loads, twice-daily pumpovers while in tank, ferment checks, a transfer and tank cleaning at every move, barrel filling, monthly topping, a mid-term racking and washing on the way out, and bottling days on a mobile line; sold cases add shipping work. Harvest is any day a ferment is running. The crew is sized from these days: full-time staff from the off-season workload, seasonal workers from the busiest harvest week, so the dashed line shows where long days and catch-up fall. Equipment hours come from the same events, against one 10-hour shift per unit.</p>
-    <p><b>Labor.</b> Cellar labor is built from tasks. Harvest work scales with pick days (one per lot), tons sorted, press loads, red ferment days (from the lot simulator: cold soak, ferment and any extended maceration) times pumpovers, and tank turnovers, plus daily rounds whether fruit arrives or not. The rest of the year scales with barrels, storage tanks and cases. The winemaker covers a set number of hands-on hours. A full-time cellar worker is hired once the leftover off-season work reaches about 60% of a full-time job; that person works long harvest weeks with overtime past 40 hours, and seasonal workers fill whatever harvest hours remain. Labor is a production cost, so it rides in each vintage's cost per case. Salaried winemaker, admin and tasting room staff stay separate.</p>
+    <p><b>Labor.</b> Cellar labor is built from tasks. Harvest work scales with pick days (one per lot), tons sorted, press loads, red ferment days (from the lot simulator: cold soak, ferment and any extended maceration) times pumpovers, and tank turnovers, plus daily rounds whether fruit arrives or not. The rest of the year scales with barrels, storage tanks and cases. The winemaker covers a set number of hands-on hours. A full-time cellar worker is hired once the leftover off-season work reaches about 60% of a full-time job; that person works long harvest weeks with overtime past 40 hours, and seasonal workers fill whatever harvest hours remain, with overtime past 40 hours in any week. Off-season, routine work that runs a few hours over slides to the next day; days more than half a person-day over the steady crew, mostly bottling, bring in temporary help with a four-hour minimum call. Labor is a production cost, so it rides in each vintage's cost per case. Salaried winemaker, admin and tasting room staff stay separate.</p>
     <p><b>Not yet.</b> Production growing over time, income taxes, winery wastewater, risk (bad vintages, missed ramps), price inflation, and the quality value of a hired winemaker, which is why hiring currently looks like pure cost.</p>
   </div>
   <p class="foot">Skeleton v2. Defaults sourced where possible; see the confidence column.</p>
@@ -188,6 +188,8 @@ kbd{font:12px/1 ui-monospace,monospace;border:1px solid var(--rule);border-botto
 <script>
 {
 /*CORE*/
+/*EXC*/
+/*WINERY*/
 /*FIN*/
 /*SRC*/
 /*FLOW*/
@@ -240,7 +242,7 @@ function drawWork(d0,d1){
   g+=`<line class="cur" data-x0="${m.l}" data-x1="${Wd-m.r}" x1="${x(cur)}" x2="${x(cur)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink)" stroke-width="2"/>`+axisM(x,d0,d1,H-6);
   s.innerHTML=g;
   $('laborLegend').innerHTML=TASKS.map(([k,n])=>`<span><i style="background:${TCOL[k]}"></i>${n}</span>`).join('')+(rng==='vintage'?'':`<span><i style="background:var(--ink);height:2px"></i>Crew on hand (dashed)</span>`);
-  const L=M.lbr;$('laborLede').textContent=`Busiest day about ${n0(L.peakDay)} hours. Harvest (any ferment running) lasts about ${L.harvestWeeks.toFixed(1)} weeks. Crew: ${G.owner==='hire'?'the winemaker':'you as winemaker'}${L.perms?`, ${L.perms} full-time`:''}${L.partHrs>0?`, ${n0(L.partHrs)} part-time hours`:''}, and ${L.seasonalHeads} seasonal at harvest, sized to the busiest week. Days above the dashed line are long days or catch-up.`;
+  const L=M.lbr;$('laborLede').textContent=`Busiest day about ${n0(L.peakDay)} hours. Harvest (any ferment running) lasts about ${L.harvestWeeks.toFixed(1)} weeks. Crew: ${G.owner==='hire'?'the winemaker':'you as winemaker'}${L.perms?`, ${L.perms} full-time`:''}${L.partHrs>0?`, ${n0(L.partHrs)} part-time hours`:''}${L.tempDays?`, temporary help on ${L.tempDays} off-season days`:''}, and ${L.seasonalHeads} seasonal at harvest, sized to the busiest week. Days above the dashed line are long days or catch-up.`;
   // equipment lanes
   s=$('sE');Wd=s.clientWidth;H=s.clientHeight;const nl=EQUIP.length,lh=(H-m.t-m.b)/nl,xe=d=>8+(d-d0)/(d1-d0)*(Wd-8-12);g='';
   EQUIP.forEach(([k,name],i)=>{const y0=m.t+i*lh,a=Ee[k],u=W.units[k];let pk=0,yr=0;for(let d=d0;d<d1;d++)pk=Math.max(pk,a[Math.min(d,FL.D-1)]);for(let d=0;d<365;d++)yr+=W.E[k][d];
@@ -253,7 +255,7 @@ function drawWork(d0,d1){
   g+=`<line class="cur" data-x0="8" data-x1="${Wd-12}" x1="${xe(cur)}" x2="${xe(cur)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink)" stroke-width="2"/>`+axisM(xe,d0,d1,H-6);
   s.innerHTML=g;
 }
-function axisM(x,d0,d1,y){let g='';const st=rng==='vintage'?3:1;for(let mo=0;mo<60;mo+=st){const d=Math.round((new Date(2001,7+mo,1)-new Date(2001,7,1))/864e5);if(d<d0||d>d1)continue;const t=new Date(2001,7+mo,1);g+=`<text x="${x(d)+3}" y="${y}" font-size="12" fill="var(--mute)">${t.toLocaleDateString('en-US',{month:'short'})}</text>`}return g}
+function axisM(x,d0,d1,y){let g='';const st=rng==='vintage'?3:1;for(let mo=0;mo<Math.ceil(FL.D/30.44);mo+=st){const d=Math.round((new Date(2001,7+mo,1)-new Date(2001,7,1))/864e5);if(d<d0||d>d1)continue;const t=new Date(2001,7+mo,1);g+=`<text x="${x(d)+3}" y="${y}" font-size="12" fill="var(--mute)">${t.toLocaleDateString('en-US',{month:'short'})}</text>`}return g}
 function drawGantt(d0,d1){
   const s=$('sG'),W=s.clientWidth;if(!W)return;const L=FL.lots,rh=20,lab=150,m={t:6,r:12};
   const H=m.t+L.length*rh+8;s.parentNode.style.minHeight=H+'px';
@@ -294,7 +296,7 @@ function workNow(d){
 function flowLede(){
   if(G.facility!=='build'){$('flowLede').textContent='Custom crush: this is your wine moving through someone else\'s cellar, so there is nothing to size and no capacity lines. Barrel counts still set how many barrels you buy.';return}
   const S=M.sz,N=FL.need,mg=Math.round((G.designFactor-1)*100);
-  $('flowLede').textContent=`The equipment list is sized from this flow: the most vessels in use on any day of a normal year, plus the ${mg}% design margin. That gives ${S.nRed} red ferment tanks of ${n0(FL.size.redTank)} gallons, ${S.nW} white tanks of ${n0(FL.size.whiteTank)}, ${S.nS} lot tanks of ${n0(FL.size.storage)}, ${S.nB} blending tanks of ${n0(FL.size.blend)}, and ${n0(S.barrels)} barrels (peak ${n0(N.barrel.v)} in use plus spares). Each tank type is the smallest standard size that holds the largest lot. Lower the design margin under the assumptions to see where it breaks.`+Object.entries(FL.short).map(([i,mo])=>` ${V[i].name} bottles before its barrel time is up, so it only gets about ${Math.round(mo)} months in barrel; push its bottling later in the wine table.`).join('');
+  $('flowLede').textContent=`The equipment list is sized from this flow: the most vessels in use on any day of a normal year, plus the ${mg}% design margin. That gives ${S.nRed} red ferment tanks of ${n0(FL.size.redTank)} gallons, ${S.nW} white tanks of ${n0(FL.size.whiteTank)}, ${S.nS} lot tanks of ${n0(FL.size.storage)}, ${S.nB} blending tanks of ${n0(FL.size.blend)}, and ${n0(S.barrels)} barrels (peak ${n0(N.barrel.v)} in use plus spares). Each tank type is the smallest standard size that holds the largest lot. Lower the design margin under the assumptions to see where it breaks.`+(FL.exceptions.length?` Departures from the plan as set: `+FL.exceptions.map(e=>`${e.wine}${e.lot!=null&&e.lot!==undefined?' lot '+(e.lot+1):''}, ${e.process.toLowerCase()}: ${e.what}. ${e.remedies?'Options: '+e.remedies+'.':''}`).join(' '):'');
 }
 function renderFlow(){if(tab!=='flow')return;FL=M.FL;const S=M.sz;
   FL.vcaps=G.facility==='build'?{redTank:S.nRed,whiteTank:S.nW,storage:S.nS,blend:S.nB,barrel:S.barrels}:{};
@@ -426,7 +428,7 @@ function implied(){
   const Wt=m.W;if(Wt.lines.length){eq+=hdr(`Water: ${money(Wt.wellCap+Wt.rights+Wt.transfer+(G.fruit==='estate'?m.acres*G.dripAcre:0))} up front, ${money(Wt.annual)} a year`)+Wt.lines.map(l=>`<tr><td>${l.k}</td><td></td><td>${l.yr?money(l.yr)+'/yr':''}</td><td>${l.cap?money(l.cap):''}</td><td>${l.why}</td></tr>`).join('')}
   const ex=m.rows[8]||m.rows[m.rows.length-1],exGal=ex.sold*2.378,exSh=G.tasting?G.shareTR:G.shareNoTR,dtc=(exSh[0]+exSh[1])/100,fedEx=Math.max(0,exGal*G.fedExcise-Math.min(exGal,30000)-Math.min(Math.max(exGal-30000,0),100000)*0.9),waEx=exGal*3.785*G.waTaxL*dtc*G.waShare/100;
   eq+=hdr(`Excise tax, year 8: ${money(ex.fixed.excise)}`)+`<tr><td>Federal</td><td>${n0(exGal)} gal removed</td><td>$${G.fedExcise.toFixed(2)}/gal less $1.00 credit</td><td>${money(fedEx)}</td><td>the small-producer credit covers almost all of it on the first 30,000 gallons a year</td></tr><tr><td>Washington</td><td>${Math.round(dtc*G.waShare)}% of gallons</td><td>$${G.waTaxL}/liter</td><td>${money(waEx)}</td><td>on tasting room and club sales to Washington residents; distributors pay it on wholesale. Reds over 14% need an affidavit on file to stay at this rate</td></tr>`;
-  eq+=hdr('Storage and property tax, year 8')+`<tr><td>Bottled wine storage</td><td>${n0(m.peakBottled)} peak cases</td><td>${G.storage==='onsite'?'on site':'off-site bonded'}</td><td>${G.storage==='onsite'?'':money(r8.storage)+'/yr'}</td><td>${G.storage==='onsite'?'adds the case storage room above, its property tax, insurance and upkeep':'monthly per-case fee, handling in and out, and bond admin'}</td></tr><tr><td>Property tax</td><td></td><td></td><td>${money(r8.propTax)}/yr</td><td>on land, building and equipment. Wine inventory itself is exempt in Washington, so the tax difference between the two storage choices is the building, not the wine</td></tr>`;
+  eq+=hdr('Storage and property tax, year 8')+`<tr><td>Bottled wine storage</td><td>${n0(m.peakBottled)} peak cases, about ${n0(m.rampBacklog)} of them unsold backlog from the sales ramp</td><td>${G.storage==='onsite'?'on site':'off-site bonded'}</td><td>${G.storage==='onsite'?'':money(r8.storage)+'/yr'}</td><td>${G.storage==='onsite'?'adds the case storage room above, its property tax, insurance and upkeep':'monthly per-case fee, handling in and out, and bond admin'}</td></tr><tr><td>Property tax</td><td></td><td></td><td>${money(r8.propTax)}/yr</td><td>on land, building and equipment. Wine inventory itself is exempt in Washington, so the tax difference between the two storage choices is the building, not the wine</td></tr>`;
   if(own&&m.lbr){const W=m.lbr,mk=s=>W.tasks.filter(t=>t.season===s).map(t=>`<tr><td>${t.k}</td><td>${n0(t.hrs)} hrs</td><td></td><td></td><td>${t.why}</td></tr>`).join('');
     eq+=hdr(`Labor: ${n0(W.harvestHrs+W.yearHrs)} hours a year, ${money(W.total)} plus the winemaker`)+
      `<tr><td><i>Harvest, ${W.harvestWeeks.toFixed(1)} weeks</i></td><td>${n0(W.harvestHrs)} hrs</td><td>${n0(W.peakWeek)} hrs/week</td><td></td><td>average week; the busiest weeks run well above it</td></tr>`+mk('harvest')+
@@ -434,10 +436,11 @@ function implied(){
      `<tr><td><b>Who does it</b></td><td></td><td></td><td></td><td></td></tr>`+
      `<tr><td>${G.owner==='hire'?'Hired winemaker':'Owner as winemaker'}</td><td>${n0(W.wmH+W.wmY)} hrs</td><td></td><td>in salary</td><td>${G.wmHarvestHrs} hours a week hands-on at harvest, ${G.wmCellarHrs} the rest of the year</td></tr>`+
      `<tr><td>Full-time cellar staff</td><td>${W.perms}</td><td>$${G.cellarWage}/hr</td><td>${money(W.cost.perm+W.cost.ot)}</td><td>${W.perms?`hired once off-season work passes about 60% of a full-time job; ${n0(W.otHrs)} overtime hours at harvest`:'off-season work does not justify a full-time hire'}</td></tr>`+
-     (W.partHrs>0?`<tr><td>Part-time cellar help</td><td>${n0(W.partHrs)} hrs</td><td>$${G.cellarWage}/hr</td><td>${money(W.cost.part)}</td><td>off-season hours left over</td></tr>`:'')+
-     `<tr><td>Seasonal harvest workers</td><td>${W.seasonalHeads}</td><td>$${G.seasonalWage}/hr</td><td>${money(W.cost.seasonal)}</td><td>${n0(W.seasonalHrs)} harvest hours the winemaker and full-time staff can't cover</td></tr>`;}
+     (W.partHrs>0?`<tr><td>Part-time cellar help</td><td>${n0(W.partHrs)} hrs</td><td>$${G.cellarWage}/hr</td><td>${money(W.cost.part)}</td><td>routine off-season hours the steady crew can't cover, spread through the year</td></tr>`:'')+
+     (W.tempPaid>0?`<tr><td>Temporary help, off-season</td><td>${n0(W.tempPaid)} hrs paid</td><td>$${G.seasonalWage}/hr</td><td>${money(W.cost.temp)}</td><td>${W.tempDays} days, mostly bottling, run above the steady crew; ${n0(W.tempHrs)} hours of work with a four-hour minimum call</td></tr>`:'')+
+     `<tr><td>Seasonal harvest workers</td><td>${W.seasonalHeads}</td><td>$${G.seasonalWage}/hr</td><td>${money(W.cost.seasonal+W.cost.seasonalOT)}</td><td>${n0(W.seasonalHrs)} harvest hours the winemaker and full-time staff can't cover, ${n0(W.seasonalOTHrs)} of them past 40 hours a week at time and a half</td></tr>`;}
   if(!own)eq='<tr><td colspan="5">No winery to build. The custom crush fee covers tanks, press, cellar work and most routine analysis.</td></tr>'+eq;
-  const bbl=V.map((v,i)=>[v,i]).filter(([v])=>v.barrel>0).map(([v,i])=>{const per=v.cases*2.4/59.4,stock=m.FL.bPeak[i]*G.barrelSpare;return `<tr><td>Barrels, ${v.name}</td><td>${Math.ceil(stock)}</td><td>${v.newOak}% new</td><td>${money(stock*(v.newOak/100*G.barrelNew+(1-v.newOak/100)*G.barrelUsed))}</td><td>${Math.ceil(per)} per vintage, ${v.barrel} months, peak ${Math.round(m.FL.bPeak[i])} in use at once from the cellar flow, then about ${Math.ceil(per*Math.max(v.newOak/100,0.2))} bought each year</td></tr>`}).join('');
+  const bbl=V.map((v,i)=>[v,i]).filter(([v])=>v.barrel>0).map(([v,i])=>{const per=v.cases*2.4/59.4,stock=m.FL.bStock[i];return `<tr><td>Barrels, ${v.name}</td><td>${Math.ceil(stock)}</td><td>${v.newOak}% new</td><td>${money(stock*(v.newOak/100*G.barrelNew+(1-v.newOak/100)*G.barrelUsed))}</td><td>${Math.ceil(per)} per vintage, ${v.barrel} months, peak ${Math.round(m.FL.bPeak[i])} in use at once from the cellar flow, then about ${Math.ceil(per*Math.max(v.newOak/100,0.2))} bought each year</td></tr>`}).join('');
   const cap=Object.entries(lines).map(([k,v])=>`<tr><td>${k}</td><td></td><td></td><td>${money(v)}</td><td></td></tr>`).join('');
   $('equip').innerHTML=`<thead><tr><th>Item</th><th>Qty</th><th>Size</th><th>Cost</th><th>Why</th></tr></thead><tbody>${eq}${bbl?hdr('Barrels')+bbl:''}${hdr('Capital by category')}${cap}</tbody>`;
 }
@@ -459,7 +462,7 @@ function run(skipWines){
   $('cardLoan').innerHTML=l.loanAmt?card(l,'With a loan'):`<h3>With a loan</h3><div class="sub">Nothing to borrow against: no land, building or equipment in this setup.</div>`;
   if(!skipWines)renderWines();else renderWines();
   syncControls();implied();years();drawJ();drawY();FL=null;renderFlow();
-  try{localStorage.setItem('feasV10',JSON.stringify({V,G}))}catch(e){}
+  try{localStorage.setItem('feasV11',JSON.stringify({V,G}))}catch(e){}
 }
 document.addEventListener('click',e=>{
   const d=e.target.closest('[data-d]');if(d){const k=d.dataset.d,v=d.dataset.v;G[k]=v==='true'?true:v==='false'?false:v;run();return}
@@ -507,7 +510,7 @@ function lockNote(){$('lockNote').innerHTML=locked?`<b>Date locked on ${fdate(cu
 });
 document.addEventListener('keydown',e=>{if(tab==='flow'&&locked&&e.key==='Escape')setLock(false)});
 const ro=new ResizeObserver(()=>{drawJ();drawY();if(tab==='flow')drawFlow()});ro.observe($('sJ'));ro.observe($('sY'));ro.observe($('sF'));ro.observe($('sL'));
-try{const s=JSON.parse(localStorage.getItem('feasV10'));if(s&&Array.isArray(s.V)&&s.G){V=s.V;G={...G,...s.G}}}catch(e){}
+try{const s=JSON.parse(localStorage.getItem('feasV11'));if(s&&Array.isArray(s.V)&&s.G){V=s.V;G={...G,...s.G}}}catch(e){}
 run();setTab();
 }
 </script>

@@ -13,9 +13,11 @@ The page has two tabs:
 |---|---|
 | `src/core.js` | Fermentation and malolactic kinetics for one lot (Boulton-style: nitrogen-limited growth, Monod sugar uptake, ethanol inhibition, heat balance, ML timing against cellar temperature). Shared with the standalone Winery Lot Simulator. |
 | `src/flow.js` | Lot plan for every wine, the steady-state cellar calendar (gallons and vessels by location), and the daily work and equipment calendar. |
+| `src/exceptions.js` | One record shape for departures from the plan as set (a stuck ferment, barrel time cut or extended), with a severity class from feasible as planned to physically infeasible. |
+| `src/winery.js` | The resolved winery: press size and cycle, sorting and crush rates, jacket cooling, and the one function that sets up a lot simulation. |
 | `src/fin.js` | Variety presets, defaults, equipment sizing from the flow, building by space, land, water, lab, labor and excise. The engine is year-stepped: `plan()` makes the year-0 decisions and capital schedule, `stepYear()` runs one year (harvest the vintage, sell oldest first, book costs) with an optional luck input for yield and price, and `finStep()` runs one year of cash, loan, equity and distributions. `model()` chains them for a fixed 20-year plan. |
 | `src/sources.js` | The assumptions table: value, basis, confidence, link. |
-| `src/index.src.html` | The page. Placeholders `/*CORE*/`, `/*FIN*/`, `/*SRC*/`, `/*FLOW*/` are filled by the build. |
+| `src/index.src.html` | The page. Placeholders `/*CORE*/`, `/*EXC*/`, `/*WINERY*/`, `/*FIN*/`, `/*SRC*/`, `/*FLOW*/` are filled by the build. |
 | `build.py` | Inlines the engine into `dist/index.html`, a single self-contained page. |
 
 The engine files run in the browser and in Node, so the same code is tested and shipped.
@@ -28,12 +30,18 @@ npm test        # builds dist/index.html, then runs engine and page tests
 npm run build   # build only
 ```
 
-`test/baseline.json` holds headline outputs for a few scenarios. When a change is meant to move the numbers, regenerate it on purpose and say so in the commit.
+Tests live in `test/`: `engine.test.js` (regression and earlier invariants), `fixes.test.js` (one test per reviewed inconsistency, seeded randomized coverage, and invariants for gallon-day conservation, vessel capacity and horizon), and `page.test.js` (the built page in jsdom). `test/baseline.json` holds headline outputs for a few scenarios. When a change is meant to move the numbers, regenerate it on purpose and say so in the commit.
 
 ## Published page
 
 `dist/index.html` is published as a private Claude artifact (slug `07b65d15-69f3-4b05-bc5f-577bbb926dff`).
 
+## Plan of work
+
+`docs/architecture.md` holds the review, proposed module boundaries, sequence, stress scenarios, inputs still needed and the decisions log for the physical and operational simulation work.
+
 ## Not modeled yet
 
 Year-to-year growth or shrinkage, harvest and price variability, risk, a real sales model (visitors, conversion, club growth and attrition, distribution), income taxes, inflation, winery wastewater, and wineries in leased space in town.
+
+Known financial limitations, noted and deferred: the sales ramp never sells off its early shortfall, so about 1.45 years of production sits in inventory for good (and is reported as backlog in case storage); year one buys the full steady-state barrel stock rather than buying as vintages accumulate; there is no inflation or income tax; terminal value is book value.

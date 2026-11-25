@@ -53,4 +53,6 @@ const SOURCES=[
  ['Dry or scrub land; clearing','$4,000/acre; $1,500/acre to clear','Estimates. Varies enormously by county and access.','Low',''],
  ['Zoning minimum parcel','20 acres','Grant County agricultural zone listings show a 40-acre minimum; a Benton County listing shows an AP-20 zone with a 20-acre minimum. Set to zero for an industrial lot.','Medium','https://peoplescompany.com/listings/land-grant-franklin-county-washington-1325-acres-listing-number-18104'],
  ['Plantable share and site coverage','80% plantable; buildings 12% of site','Estimates for roads, headlands, setbacks and unplantable ground, and for parking, septic and wastewater area around the winery.','Low',''],
+ ['Tank jacket cooling','1,500 BTU/hr per sq ft of jacket','Jacket covers about a third of the wall of a tank 1.5 times as tall as wide. The flux is an estimate for glycol near 28F against fermenting must; no published figure found. Jackets rarely limit a red ferment; the chiller does.','Low',''],
+ ['Off-season temporary help','Days more than 4 hours over the steady crew; 4-hour minimum call','Routine work that runs a few hours over slides to the next day; larger peaks (bottling, racking out of barrel) bring in temporary help at the seasonal wage. Estimate.','Low',''],
 ];

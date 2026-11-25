@@ -1,3 +1,5 @@
+// Line rate in tons per hour that each sorting method allows; shared with winery.js.
+const SORT_RATE={none:1e9,hand:2.5,optical:6};
 const YEAST={robust:{Yxn:0.022,kT:0.06,heat:30,f0:1},lowN:{Yxn:0.032,kT:0.06,heat:30,f0:1},cool:{Yxn:0.022,kT:0.045,heat:27,f0:1.12}};
 function cellarF(p,day){ // day = days from Jan 1, unheated cellar follows a seasonal cosine, coldest ~Jan 20
   const mid=(p.winterF+p.summerF)/2, amp=(p.summerF-p.winterF)/2;
@@ -14,8 +16,9 @@ function simulate(p){
   const out=[];let dry=null,peakT=-99,peakQ=0,peakCool=0,coolKWh=0;
   // LAB for co-inoculation
   const LABK=3e7; let lab=0, mal=p.malic;
+  let tEnd=0;
   for(let i=0;;i++){
-    const t=i*dt; if(t>p.soakDays+45)break;
+    const t=i*dt; if(t>p.soakDays+45)break; tEnd=t;
     const Tamb=F2C(p.ambF)+swing/2*Math.sin(2*Math.PI*(t-0.375));
     let dS=0;
     if(t>=inoc){
@@ -45,15 +48,17 @@ function simulate(p){
   const abv=E/7.89;
   const r={out,dry,inoc,peakTF:C2F(peakT),peakQ:peakQ*3412,peakCool:peakCool*3412,cap:cool*3412,coolKWh,S,abv,brixEnd:S/10-0.0165*E,isBin};
   const tons=p.tons;
-  const sortRate={none:1e9,hand:2.5,optical:6}[p.sort]||1e9;
+  const sortRate=SORT_RATE[p.sort]??1e9;
   const crushRate=Math.min(p.crushRate,sortRate), crushHrs=tons/crushRate+p.setupHrs;
   const bins=Math.ceil(tons/p.binTons-1e-9);
   const mustGal=tons*p.mustGal, tankGal=mustGal*(1+p.headspace/100);
   Object.assign(r,{crushHrs,crushRate,bins,mustGal,tankGal});
-  if(dry===null)return r;
+  // A ferment that has not finished by the end of the window is reported as stuck, not hidden: the wine stays in its
+  // fermenter to the end of the window and is then pressed with its sugar still in it.
+  r.stuck=dry===null;
   // ---- crush, drain and press, volumes ----
   const loads=Math.ceil(tons/p.pressLoad-1e-9), pressHrs=loads*p.pressCycle;
-  const pressDay=dry+p.emDays, pressEnd=pressDay+pressHrs/24;
+  const pressDay=r.stuck?tEnd:dry+p.emDays, pressEnd=pressDay+pressHrs/24;
   const freeGal=tons*p.freeRun, pressGal=tons*p.pressGal, gal=freeGal+pressGal, pomace=tons*0.17;
   const barrelGal=gal*(1-p.leesPct/100);
   const barrels=p.pressHandling==='separate'?Math.ceil(freeGal*(1-p.leesPct/100)/59.4-1e-9)+Math.ceil(pressGal*(1-p.leesPct/100)/59.4-1e-9):Math.ceil(barrelGal/59.4-1e-9);
@@ -77,10 +82,11 @@ function simulate(p){
       if(p.barrelRule==='afterML'){ if(mlDone!==null&&day>=Math.max(mlDone,pressEnd)+p.settleDays)barrelDay=day; }
       else if(doy>365+30&&cel>=p.barrelF)barrelDay=day;
     }
-    if(barrelDay===null&&d>=299)barrelDay=day;
+    if(barrelDay===null&&d>=299){barrelDay=day;r.barrelForced=true}
     ml.push({t:day,m,w:wT,c:cel});
     if(mlDone!==null&&barrelDay!==null&&day>Math.max(mlDone,barrelDay)+20)break;
   }
+  r.mlStuck=mlDone===null;
   Object.assign(r,{pressDay,pressEnd,pressHrs,loads,gal,barrels,ml,mlDone,barrelDay,unprot,warmUnprot,crushHrs,crushRate,bins,mustGal,tankGal,freeGal,pressGal,pomace,barrelGal});
   return r;
 }
@@ -90,4 +96,4 @@ function labRate(wF,abv){
   const ef=Math.min(1,Math.max(0.3,1-(abv-13)/8));
   return {g:0.45*tf*ef,c:0.17/3e7*tf*ef};
 }
-if(typeof module!=='undefined')module.exports={simulate,cellarF};
+if(typeof module!=='undefined')module.exports={simulate,cellarF,SORT_RATE};

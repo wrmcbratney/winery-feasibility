@@ -35,7 +35,7 @@ const GDEF={
  irrWellDepth:500, irrWellFt:100, irrPump:40000, liftFt:400, kwh:0.09, wineryWellDepth:400, wineryWellFt:60, wineryWellKit:15000, waterRatio:4,
  fedExcise:1.07, waTaxL:0.2292, waShare:85,
  buildTier:'custom', storage:'onsite', lab:'outsource', sort:'hand', trSqft:2000, trFitout:250000, permitPct:1, sfPerKgal:35, sfPerBarrel:3, sfPerCaseStored:0.15,
- jacketGal:9, storageGal:6, hoseFt:20, harvestWindow:28, designFactor:1.15, barrelSpare:1.05, lotsPerTank:2, ozone:true, chillerTon:1800,
+ jacketGal:9, storageGal:6, hoseFt:20, harvestWindow:28, designFactor:1.15, barrelSpare:1.05, lotsPerTank:2, ozone:true, chillerTon:1800, jacketFlux:1500,
  barrelNew:1400, barrelUsed:400,
  suppliesCase:8, customCase:45, capHrs:0.33, crushCrew:4, bottlePerDay:1200, shiftHrs:10, generalHrs:20, harvestWeeks:8, wmHarvestHrs:45, wmCellarHrs:15, permHarvestHrs:55, cellarWage:24, seasonalWage:20, seasonalBurden:15, tankLeaseCustom:0,
  bottlePer:2.6, carton:2.5, bottling:3.5,
@@ -47,17 +47,6 @@ const GDEF={
  loanLTV:70, loanRate:7.5, loanTerm:20, reserve:150000, distPct:75, discount:8, years:20
 };
 function deepCopy(o){return JSON.parse(JSON.stringify(o))}
-// red tank days from the lot simulator engine
-function tankDays(v,simulate){
-  if(!simulate) return 18;
-  const r=simulate({tons:5,brix:v.brix,yan:180,dapDay:-1,dapAmt:60,soakDays:v.soak??3,soakF:50,fruitF:65,setF:v.setF??85,coolBTU:6800,vessel:'tank',ambF:62,swingF:0,emDays:v.ext??0,yeast:'robust',
-   malic:2.5,ml:'seq',mlHeat:false,mlHeatF:68,winterF:52,summerF:68,barrelF:58,harvestDOY:274,pressLoad:5,pressCycle:3,
-   binTons:0.5,crushRate:8,setupHrs:1.5,sort:'hand',mustGal:180,headspace:20,freeRun:115,pressGal:45,leesPct:4,pressHandling:'blend',barrelRule:'spring',settleDays:10});
-  return r.pressEnd||30;
-}
-const simCache={};
-function redRun(v,simulate){const k=[v.brix,v.soak,v.setF,v.ext].join();if(!simCache[k])simCache[k]={days:tankDays(v,simulate)};return simCache[k]}
-
 // Building tiers: construction $/sq ft by space, design+engineering fee, site work share.
 const TIERS={
  shell:{name:'Metal building',design:8,site:5,cost:{pad:60,ferm:175,barrel:190,storage:120,lab:250,tasting:350,support:200}},
@@ -121,8 +110,8 @@ function size(V,G,simulate,FL){
   add('Tanks','Lot tanks for ML and storage',nS,S.storage.toLocaleString()+' gal',tankCost(S.storage,G.storageGal),`${Math.round(N.storage.v)} in use at the peak around ${when('storage')}, up to ${G.lotsPerTank} lots of the same wine combined after press: reds through ML until spring, unoaked whites, wine between barrel and blending; plus ${mg}% margin`,'Medium');
   add('Tanks','Blending and bottling tanks',nB,S.blend.toLocaleString()+' gal',tankCost(S.blend,G.storageGal),`each wine comes together three weeks before bottling; ${Math.round(N.blend.v)} in use at the peak around ${when('blend')}`,'Medium');
   const allTons=V.reduce((a,v)=>a+tons(v),0), grav=G.buildTier==='gravity';
-  const pressCost=allTons>60?110000:allTons>25?80000:55000;
-  add('Crush and press','Membrane press',1,allTons>60?'8 ton':allTons>25?'5 ton':'3 ton',pressCost,`${allTons.toFixed(0)} tons a year`,'Medium');
+  const pr=FL.winery.press;
+  add('Crush and press','Membrane press',1,pr.tons+' ton',pr.cost,`${allTons.toFixed(0)} tons a year`,'Medium');
   add('Crush and press','Destemmer',1,'',25000,'new; used units sell for $3k to $10k','Medium');
   add('Crush and press','Vibrating sorting table',G.sort==='none'?0:1,'',12000,'hand sorting line','High');
   add('Crush and press','Optical sorter',G.sort==='optical'?1:0,'',150000,'placeholder, no published price found','Low');
@@ -136,7 +125,7 @@ function size(V,G,simulate,FL){
   add('Pumps and hoses','Wine hose, 2" food grade',Math.round(hoseFt),'ft',G.hoseFt,grav?'shorter runs with gravity flow':'200 ft of working hose plus about 25 ft per tank','Low');
   add('Pumps and hoses','Must hose, 3"',grav?0:100,'ft',G.hoseFt*1.75,'crush pad runs','Low');
   add('Pumps and hoses','Tri-clamps, valves, gaskets, fittings',1,'',3000+150*(nRed+nW+nS),'base kit plus about $150 per tank','Low');
-  const barrels=Math.ceil(N.barrel.v*G.barrelSpare-1e-9);
+  const barrels=FL.installedB;
   add('Cellar','Barrel racks, 2-barrel steel',Math.ceil(barrels/2),'',150,'used double racks list near $120','Medium');
   add('Barrel care','Barrel washing station',barrels>0?1:0,'',3700,'rotating-jet wash and steam head on a rolling stand, run off the hot washer','High');
   add('Barrel care','Hot-water high-pressure washer',1,'',7500,'drives the barrel washer and tank cleaning; 4+ gpm at about 185°F','Low');
@@ -183,20 +172,32 @@ function labor(V,G,sz,lab,simulate,FL){
   const wmH=hW*G.wmHarvestHrs, wmY=yW*G.wmCellarHrs;
   const yRest=Math.max(0,Yh-wmY);
   const perms=Math.floor(yRest/(yW*40)+0.4);
-  const partHrs=Math.max(0,yRest-perms*yW*40);
+  const partAll=Math.max(0,yRest-perms*yW*40);
   const otHrs=perms*hW*Math.max(0,G.permHarvestHrs-40);
   // seasonal crew fills each harvest day's shortfall; headcount from the busiest week
   const base=(G.wmHarvestHrs+perms*G.permHarvestHrs)/7, short=new Float64Array(365);let seasonalHrs=0;
   for(let d=0;d<365;d++)if(WK.active[d]){short[d]=Math.max(0,Tsum[d]-base);seasonalHrs+=short[d]}
   let pk7=0;for(let d=0;d<365;d++){let s=0;for(let i=0;i<7;i++)s+=short[(d+i)%365];pk7=Math.max(pk7,s/7)}
   const seasonalHeads=Math.ceil(pk7/(50/7)-1e-9);
-  const avail=new Float64Array(365),offRate=(G.wmCellarHrs+perms*40)/7+(yW>0?partHrs/(yW*7):0);
-  for(let d=0;d<365;d++)avail[d]=WK.active[d]?base+seasonalHeads*50/7:offRate;
-  const b=1+G.burden/100;
-  const cost={perm:perms*G.cellarWage*2080*b,ot:otHrs*G.cellarWage*0.5*b,part:partHrs*G.cellarWage*(1+G.seasonalBurden/100),seasonal:seasonalHrs*G.seasonalWage*(1+G.seasonalBurden/100)};
+  // Seasonal workers are sized to 50-hour weeks at the peak, so they earn overtime past 40 hours in any week.
+  let seasonalOTHrs=0;
+  if(seasonalHeads>0)for(let w=0;w*7<365;w++){let s=0;for(let d=w*7;d<Math.min(365,w*7+7);d++)s+=short[d];seasonalOTHrs+=seasonalHeads*Math.max(0,s/seasonalHeads-40)}
+  // Off-season, the steady crew (winemaker, full-time staff, a part-time position at the average leftover rate) covers
+  // routine work, and a few hours over on a given day slide to the next. Days more than half a person-day over the steady
+  // crew (bottling, racking out of barrel) get temporary help with a four-hour minimum call; those hours come out of the
+  // part-time position rather than adding to the total work.
+  const offRate=(G.wmCellarHrs+perms*40)/7+(yW>0?partAll/(yW*7):0), tempAt=new Float64Array(365);
+  let tempHrs=0,tempPaid=0,tempDays=0;
+  for(let d=0;d<365;d++)if(!WK.active[d]){const x=Tsum[d]-offRate;if(x>4){tempAt[d]=x;tempHrs+=x;tempPaid+=Math.max(x,4*Math.ceil(x/8-1e-9));tempDays++}}
+  const partHrs=Math.max(0,partAll-tempHrs);
+  const avail=new Float64Array(365);
+  for(let d=0;d<365;d++)avail[d]=WK.active[d]?base+seasonalHeads*50/7:offRate+tempAt[d];
+  const b=1+G.burden/100, sb=1+G.seasonalBurden/100;
+  const cost={perm:perms*G.cellarWage*2080*b,ot:otHrs*G.cellarWage*0.5*b,part:partHrs*G.cellarWage*sb,seasonal:seasonalHrs*G.seasonalWage*sb,
+    seasonalOT:seasonalOTHrs*G.seasonalWage*0.5*sb,temp:tempPaid*G.seasonalWage*sb};
   const total=Object.values(cost).reduce((a,c)=>a+c,0);
   let peakDay=0;for(let d=0;d<365;d++)peakDay=Math.max(peakDay,Tsum[d]);
-  return {tasks,harvestHrs:H,yearHrs:Yh,wmH,wmY,perms,partHrs,otHrs,seasonalHrs,seasonalHeads,cost,total,peakWeek:hW?H/hW:0,harvestWeeks:hW,peakDay,avail,WK};
+  return {tasks,harvestHrs:H,yearHrs:Yh,wmH,wmY,perms,partHrs,otHrs,seasonalHrs,seasonalHeads,seasonalOTHrs,tempHrs,tempPaid,tempDays,cost,total,peakWeek:hW?H/hW:0,harvestWeeks:hW,peakDay,avail,WK};
 }
 // ===== Year-step engine =====
 // plan(): everything decided at year 0 (equipment sized from the cellar flow, labor, lab, building, land, water, capital schedule).
@@ -227,7 +228,9 @@ function plan(Vin,Gin,simulate){
   const P={V,G,Y,totCases,allTons,estate,own,acres,FL,sz,lab,lbr,laborCase,shares,netFactor,firstRel};
   // ---- the building is sized from the plan's own inventory path, so run the plan's years once for the peak of bottled wine ----
   let S=initState(P),peakBottled=0;
-  for(let y=0;y<=Y;y++){const r=stepYear(P,S,y);peakBottled=Math.max(peakBottled,r.sales.bottled)}
+  for(let y=0;y<=Y;y++){const r=stepYear(P,S,y);peakBottled=Math.max(peakBottled,r.sales.bottledPeak)}
+  // the sales ramp never sells off the early shortfall, so part of that peak is a standing backlog (a sales question, not a cellar one)
+  P.rampBacklog=V.reduce((a,v)=>a+v.cases*G.ramp.reduce((b,r)=>b+(1-r/100),0),0);
   const hasLabRoom=own&&G.lab!=='outsource';
   const bld=own?building(G,sz,peakBottled,hasLabRoom):{spaces:[],sqft:0,build:0,design:0,site:0,permits:0,total:0,T:TIERS[G.buildTier]};
   const capex=Array(Y+1).fill(0),capLines=[];
@@ -267,14 +270,16 @@ function stepYear(P,S,y,luck){
     const fruit=buyT*v.grape, farm=estate&&bearing(y)>0?(tonsOf(v)/v.tpa)*G.farmAcre:0;
     const prod=own?cases*(G.suppliesCase+laborCase):cases*G.customCase;
     const bbl=v.barrel>0?cases*2.4/59.4:0, newShare=v.newOak/100;
-    const stock=v.barrel>0?FL.bPeak[i]*G.barrelSpare:0;
+    const stock=v.barrel>0?FL.bStock[i]:0;
     const barrelCost=y===1?stock*(newShare*G.barrelNew+(1-newShare)*G.barrelUsed):bbl*(newShare*G.barrelNew+Math.max(0,0.2-newShare)*G.barrelUsed);
     const dry=cases*(G.bottlePer*12+G.carton+G.bottling);
     const relYear=y+Math.floor((9.5+v.release)/12), botYear=y+Math.floor((9.5+Math.min(bottleOf(v),v.release))/12);
     fruitC+=fruit;farmC+=farm;prodC+=prod;barrelC+=barrelCost;S.dryDue[botYear]=(S.dryDue[botYear]||0)+dry;
-    S.vint.push({i,y,relYear,botYear,cases,left:cases,cost:cases?(fruit+farm+prod+barrelCost+dry)/cases:0});
+    const bf=((9.5+Math.min(bottleOf(v),v.release))%12)/12; // fraction of the calendar year at which it is bottled
+    S.vint.push({i,y,relYear,botYear,bf,cases,left:cases,cost:cases?(fruit+farm+prod+barrelCost+dry)/cases:0});
   });
   // ---- sell, oldest vintage first, up to this year's sell-through for each wine ----
+  const startBottled=S.vint.filter(vt=>vt.botYear<y).reduce((a,vt)=>a+vt.left,0);
   let rev=0,cogs=0,sold=0,dtcRev=0;
   V.forEach((v,i)=>{
     const k=y-firstRel[i]; if(k<0)return;
@@ -286,7 +291,11 @@ function stepYear(P,S,y,luck){
   const bottled=S.vint.filter(vt=>vt.botYear<=y).reduce((a,vt)=>a+vt.left,0);
   const bottledIn=S.vint.filter(vt=>vt.botYear===y).reduce((a,vt)=>a+vt.cases,0);
   const invCost=S.vint.reduce((a,vt)=>a+vt.left*vt.cost,0);
-  const sales={rev,cogs,sold,dtcRev,inv,bottled,bottledIn,invCost};
+  // Within the year, bottled cases rise at each bottling and fall as sales go out evenly through the year; the peak
+  // falls just after one of the bottlings (or at the start of the year), which is what case storage has to hold.
+  let bottledPeak=startBottled,cum=startBottled;
+  for(const vt of S.vint.filter(vt=>vt.botYear===y).sort((a,b)=>a.bf-b.bf)){cum+=vt.cases;bottledPeak=Math.max(bottledPeak,cum-sold*vt.bf)}
+  const sales={rev,cogs,sold,dtcRev,inv,bottled,bottledIn,invCost,bottledPeak};
   const dryC=S.dryDue[y]||0;
   if(!P.bld)return {sales}; // forecast pass inside plan(): inventory only
   // ---- the year's costs ----
@@ -323,7 +332,7 @@ function model(Vin,Gin,simulate){
   for(let y=0;y<=P.Y;y++)rows.push(stepYear(P,S,y).row);
   const fin={cash:finance(rows,P,0),loan:finance(rows,P,P.eligible*P.G.loanLTV/100)};
   const {sz,bld,lab,lbr,FL,W,LD,acres,landAcres,land,capLines,netFactor,totCases,allTons,firstRel,peakBottled,V,G}=P;
-  return {rows,fin,sz,bld,lab,lbr,FL,W,LD,acres,landAcres,land,capexTotal:P.capex.reduce((a,c)=>a+c,0),capLines,netFactor,totCases,allTons,firstRel,peakBottled,V,G,P};
+  return {rows,fin,sz,bld,lab,lbr,FL,W,LD,acres,landAcres,land,capexTotal:P.capex.reduce((a,c)=>a+c,0),capLines,netFactor,totCases,allTons,firstRel,peakBottled,rampBacklog:P.rampBacklog,V,G,P};
 }
 // ---- financing, one year at a time ----
 function finInit(P,loanAmt){const G=P.G,r=G.loanRate/100,n=G.loanTerm;return {loanAmt,r,pmt:loanAmt>0?loanAmt*r/(1-Math.pow(1+r,-n)):0,bal:loanAmt,cash:0,cum:0,equityTot:0,out:[]}}

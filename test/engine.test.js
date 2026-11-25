@@ -19,15 +19,7 @@ test('outputs match baseline (update baseline.json on purpose when a model chang
   }
 });
 
-test('no NaN anywhere across decision combinations', () => {
-  const opts = { fruit: ['buy', 'estate'], facility: ['build', 'custom'], buildTier: ['shell', 'custom', 'gravity'], storage: ['onsite', 'offsite'], lab: ['outsource', 'basic', 'full'], water: ['district', 'well', 'buyRight'], owner: ['winemaker', 'hire'] };
-  const keys = Object.keys(opts);
-  for (let i = 0; i < 40; i++) {
-    const g = Object.fromEntries(keys.map((k, j) => [k, opts[k][(i * (j + 3) + j) % opts[k].length]]));
-    const m = run(g);
-    for (const r of m.rows) for (const [f, v] of Object.entries({ rev: r.rev, opex: r.opex, ebitda: r.ebitda, capex: r.capex })) assert.ok(Number.isFinite(v), `${JSON.stringify(g)} year ${r.y} ${f}`);
-  }
-});
+// Decision combinations are covered by the seeded randomized test in fixes.test.js.
 
 test('installed vessels cover the peak in use', () => {
   for (const g of [{}, { lotsPerTank: 1 }, { lotsPerTank: 3 }, { fruit: 'estate' }]) {
