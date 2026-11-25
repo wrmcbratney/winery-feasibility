@@ -117,7 +117,11 @@ The ledger and scheduler should not be built on these until they are confirmed. 
 
 **E. Step 3 and step 5 are closer than the brief implies.** Design-mode vessel assignment is a packing and scheduling problem in its own right. Building the resource calendar once, in step 3, is cheaper than building it twice.
 
-## 8. Decisions log
+## 8. Noted for the deferred sales work
+
+Pricing is per bottle in the model, but real pricing differs by bottle and by case (case discounts), and the year includes club-release discounts and end-of-season sales beyond the flat club discount. Nothing to build yet; the sales model should carry a price schedule by channel and season rather than one net factor.
+
+## 9. Decisions log
 
 - **Decided (Nov 2026):** stay with plain JavaScript modules, single inlined page, no solver for the first scheduler.
 - **Step 1 judgment calls, open for review:**
@@ -127,7 +131,7 @@ The ledger and scheduler should not be built on these until they are confirmed. 
   - Off-season staffing (item 10): permanent crew and a part-time position are still set from average off-season hours. Routine work a few hours over slides to the next day; days more than four hours over the steady crew get temporary help with a four-hour minimum call at the seasonal wage, and those hours come out of the part-time position. At default that is 13 days, mostly bottling. A first attempt that re-solved the part-time rate after removing temp hours cascaded to 140 temp days a year and was dropped.
   - Per-lot cooling (item 3): jacket area on the assigned red tank times a heat flux of 1,500 BTU/hr per sq ft (Low confidence). At default this does not change any ferment; the chiller rule is untouched until step 4.
 
-## 9. Step 1 results
+## 10. Step 1 results
 
 Found while testing, not in the outside review: blending tanks were sized from finished wine volume (cases times 2.378 gal plus 3%), but the wine arriving from barrel is the larger pre-loss volume, so a blend tank could hold more than its size. The new capacity invariant caught it. Blend tanks are now sized for what arrives; the underlying mismatch is a lot ledger problem (step 2).
 
