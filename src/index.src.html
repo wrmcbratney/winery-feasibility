@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Winery Feasibility, 20 Years</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a sober feasibility study for someone who reads pro formas for a living; wine colours, ledger discipline
+   IDEA: the owner's ledger: one J-curve of the owner's money in and out over twenty years, cash versus loan
+   PICTURE: the cumulative owner cash chart, both financing paths, large and first
+   COLOUR and TYPE: paper white and ink; wine red for the all-cash path, steel blue for the loan path, oak for inventory; Archivo wide + Source Sans 3
+   LAYOUT: verdict and chart, decisions and wines, the winery it implies, year by year, assumptions folded away */
+:root{color-scheme:light dark;--bg:light-dark(#fbfaf8,#140c0f);--panel:light-dark(#f1ece8,#22161a);--ink:light-dark(#1b1416,#f3ebe7);--mute:light-dark(#6d6064,#b3a3a7);--rule:light-dark(#ded5d0,#3a2a30);--wine:light-dark(#7a1631,#e0637f);--loan:light-dark(#1f6f8b,#62b6d4);--oak:light-dark(#8a5a2b,#d3a06c);--good:light-dark(#2f6b3a,#7fcf8c);--bad:light-dark(#c2410c,#ff8a4c)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Source Sans 3",system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(18px,3vw,40px) max(5vw,16px);max-width:1240px;margin:0 auto}
+h1,h2,h3,.big,legend,summary{font-family:Archivo,system-ui,sans-serif;font-stretch:112%}
+h1{font-size:clamp(28px,4vw,44px);line-height:1.05;margin:0 0 8px;font-weight:800;text-wrap:balance}
+h2{font-size:clamp(20px,2.4vw,26px);line-height:1.1;margin:0 0 10px;font-weight:800}
+h3{font-size:17px;margin:0 0 6px}
+.lede{color:var(--mute);max-width:72ch;margin:0}
+.verdict{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr) minmax(0,1fr);gap:20px;margin-top:20px;align-items:start}
+.card{border-top:4px solid var(--c);padding-top:10px}
+.card .row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--rule);font-size:15px}
+.card .row span:last-child{font-weight:600;white-space:nowrap;text-align:right}
+.card .big{font-size:clamp(26px,3vw,36px);font-weight:800;line-height:1.1}
+.card .sub{font-size:14px;color:var(--mute);margin-bottom:6px}
+.fig{position:relative;min-height:340px;background:var(--panel);border-radius:6px}
+.fig.mid{min-height:260px;margin-top:12px}
+.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;color:var(--mute);margin-top:8px}
+.legend i{display:inline-block;width:16px;height:4px;vertical-align:middle;margin-right:6px;border-radius:2px}
+.decisions{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 20px;margin-top:6px}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.seg button{flex:1 1 auto}
+button{font:600 15px "Source Sans 3",sans-serif;min-height:44px;padding:8px 12px;border-radius:6px;border:1px solid var(--rule);background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--ink)}button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--loan);outline-offset:2px}
+button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.dlab{font-size:14px;color:var(--mute)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{padding:8px 8px;border-bottom:1px solid var(--rule);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:600;color:var(--mute);font-size:14px}
+td input{width:84px;font:16px "Source Sans 3",sans-serif;padding:6px 8px;border:1px solid var(--rule);border-radius:4px;background:var(--bg);color:var(--ink);text-align:right}
+td select{font:16px "Source Sans 3",sans-serif;padding:6px;border:1px solid var(--rule);border-radius:4px;background:var(--bg);color:var(--ink)}
+.scroll{overflow-x:auto}
+.equip td:last-child{white-space:normal;text-align:left;color:var(--mute);font-size:14px;min-width:260px}
+.neg{color:var(--bad)}.pos{color:var(--good)}
+details{border-top:1px solid var(--rule);margin-top:18px}
+summary{cursor:pointer;font-weight:700;font-size:18px;padding:14px 0;min-height:44px}
+.groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}
+fieldset{border:0;border-top:1px solid var(--rule);margin:0;padding:12px 0 0}
+legend{font-weight:700;font-size:16px;padding:0}
+.ctl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;margin:10px 0}
+.ctl label{font-size:15px}.ctl output{font-weight:600;white-space:nowrap;text-align:right}
+.ctl input{grid-column:1/-1;width:100%;height:30px;accent-color:var(--wine)}
+.notes{columns:2 320px;column-gap:32px}.notes p{margin:0 0 12px;break-inside:avoid}
+.foot{font-size:14px;color:var(--mute)}
+.src td{white-space:normal;text-align:left;vertical-align:top}.src td:nth-child(2){white-space:nowrap;font-weight:600}.src td:nth-child(3){min-width:300px;color:var(--mute);font-size:14px}
+.conf{display:inline-block;font-size:13px;font-weight:600;padding:1px 8px;border-radius:10px}.conf.High{background:var(--good);color:var(--bg)}.conf.Medium{background:var(--oak);color:var(--bg)}.conf.Low{background:var(--bad);color:var(--bg)}
+.tabs{display:flex;gap:6px;margin-top:18px;border-bottom:1px solid var(--rule)}.tabs button{border-radius:6px 6px 0 0;border-bottom:0;min-width:140px}
+.flowgrid{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:20px;margin-top:14px;align-items:start}
+.fig.lanes{min-height:500px}.fig.gantt{min-height:200px;margin-top:12px}
+.snap{height:560px;overflow-y:auto;overscroll-behavior:contain;padding-right:6px;scrollbar-gutter:stable}
+.snap h3{margin:0 0 4px}.snap .row{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:4px 8px;padding:7px 0;border-bottom:1px solid var(--rule);font-size:15px;align-items:baseline}
+.snap .row i{width:12px;height:12px;border-radius:2px;display:block;align-self:center}.snap .row b{white-space:nowrap}.snap .row small{grid-column:2/-1;color:var(--mute);font-size:13px}
+.snap .row.over b{color:var(--bad)}
+#scrub{width:100%;accent-color:var(--wine);height:30px;margin-top:6px}
+@media(max-width:900px){.flowgrid{grid-template-columns:minmax(0,1fr)}.snap{height:420px}}
+.pill{display:inline-block;font-size:13px;padding:1px 8px;border-radius:10px;background:var(--panel);color:var(--mute)}
+@media(max-width:900px){.verdict{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.verdict>.chart{grid-column:1/-1}}
+@media(max-width:560px){.verdict{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<div class="band">
+  <h1 id="headline">Winery feasibility, 20 years</h1>
+  <p class="lede">From land and engineering through planting, building, every vintage moving from grape to sold case, and the owner's money in and out. A thought exercise. Defaults come from published 2024 to 2026 data where it exists, with each source and its confidence listed below; every assumption is adjustable. Taxes and risk are not modeled yet.</p>
+  <div class="tabs" role="tablist"><button role="tab" data-tab="money" id="tbMoney">Money</button><button role="tab" data-tab="flow" id="tbFlow">Cellar flow</button></div>
+  <div id="flowView" hidden>
+    <div style="display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;margin-top:14px">
+      <div class="seg" style="max-width:560px;flex:1 1 360px"><button data-rng="harvest">Harvest, Aug to Dec</button><button data-rng="year">A full year</button><button data-rng="vintage">One vintage, pick to sold</button></div>
+      <div class="seg" style="max-width:260px;flex:0 1 240px"><button data-unit="gal">Gallons</button><button data-unit="ves">Vessels</button></div>
+    </div>
+    <p class="lede" id="flowLede" style="margin-top:6px"></p>
+    <div class="flowgrid">
+      <div>
+        <div class="fig lanes"><svg id="sF" role="img" aria-label="Gallons by cellar location over time, with capacity lines"></svg></div>
+        <input type="range" id="scrub" min="0" max="364" step="1" aria-label="Date">
+        <div class="legend"><span><i style="background:var(--ink);height:2px"></i>Installed capacity (dashed)</span><span><i style="background:var(--bad)"></i>Over capacity</span><span id="flowNote"></span></div>
+      </div>
+      <div class="snap" id="snap"></div>
+    </div>
+    <div id="workBlock">
+    <h3 style="margin-top:22px">Cellar labor, hours per day</h3>
+    <p class="dlab" id="laborLede" style="margin:2px 0 8px"></p>
+    <div class="fig" style="min-height:260px"><svg id="sL" role="img" aria-label="Cellar labor hours per day by task, with the crew available"></svg></div>
+    <div class="legend" id="laborLegend"></div>
+    <h3 style="margin-top:22px">Equipment time, hours per day</h3>
+    <p class="dlab" style="margin:2px 0 8px">Dashed line is one 10-hour shift for every unit installed. Anything above it is a night shift, a second unit, or wine waiting.</p>
+    <div class="fig" style="min-height:440px"><svg id="sE" role="img" aria-label="Hours of use per day for each piece of cellar equipment"></svg></div>
+    </div>
+    <h3 style="margin-top:22px" id="ganttHead">Where each lot of this vintage is</h3>
+    <div class="fig gantt"><svg id="sG" role="img" aria-label="Timeline of each lot through crush pad, tanks, barrels and bottle"></svg></div>
+  </div>
+  <div class="verdict" id="moneyView">
+    <div class="chart">
+      <div class="fig"><svg id="sJ" role="img" aria-label="Cumulative owner cash by year, all cash versus loan"></svg></div>
+      <div class="legend"><span><i style="background:var(--wine)"></i>All cash</span><span><i style="background:var(--loan)"></i>With a loan</span><span><i style="background:var(--mute);height:2px"></i>Break-even line</span><span>Owner cash in and out, cumulative, before the business's ending value</span></div>
+    </div>
+    <div class="card" style="--c:var(--wine)" id="cardCash"></div>
+    <div class="card" style="--c:var(--loan)" id="cardLoan"></div>
+  </div>
+</div>
+
+<div class="band" style="padding-top:0">
+  <h2>The big decisions</h2>
+  <div class="decisions" id="decisions"></div>
+</div>
+
+<div class="band" style="padding-top:0">
+  <h2>What you make</h2>
+  <p class="lede">Target cases a year for each wine. Fruit, tanks, barrels, bottling and the sales ramp all follow from this table.</p>
+  <div class="scroll" style="margin-top:10px"><table id="wines"></table></div>
+  <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select id="addVar" aria-label="Variety to add"></select><button id="addWine">Add a wine</button><span class="dlab">Picking a variety fills in its grape price, yield, ripeness, oak and release; edit any of them after.</span></div>
+</div>
+
+<div class="band" style="padding-top:0">
+  <h2>The winery it implies</h2>
+  <p class="lede" id="impliesLede"></p>
+  <div class="scroll" style="margin-top:10px"><table class="equip" id="equip"></table></div>
+</div>
+
+<div class="band" style="padding-top:0">
+  <h2>Year by year</h2>
+  <div class="seg" style="max-width:420px"><button data-fin="cash" id="fc">All cash</button><button data-fin="loan" id="fl">With a loan</button></div>
+  <div class="fig mid"><svg id="sY" role="img" aria-label="Revenue and costs by year, with cases in inventory"></svg></div>
+  <div class="legend"><span><i style="background:var(--good)"></i>Revenue</span><span><i style="background:var(--wine)"></i>Production spending</span><span><i style="background:var(--mute)"></i>Operating costs</span><span><i style="background:var(--bad)"></i>Capital spending</span><span><i style="background:var(--oak);height:2px"></i>Cases in inventory (right axis)</span></div>
+  <div class="scroll" style="margin-top:14px"><table id="years"></table></div>
+</div>
+
+<div class="band" style="padding-top:0">
+  <h2>Where the numbers come from</h2>
+  <p class="lede">Each default with its basis and how much to trust it. Prices are Washington-based except Pinot Noir, which assumes Oregon fruit. High means a current published figure; low means a rough range or a placeholder that needs a real quote.</p>
+  <div class="scroll" style="margin-top:10px"><table class="src" id="srcTable"></table></div>
+</div>
+
+<div class="band" style="padding-top:0">
+  <details id="settings"><summary>Assumptions</summary><div class="groups" id="groups"></div></details>
+</div>
+
+<div class="band">
+  <h2>How the model works</h2>
+  <div class="notes">
+    <p><b>Timeline.</b> Year 0 is land, site work, engineering and the build (or planting). The first harvest is year 1. Each vintage is released after its months-to-release, counted from a mid-October harvest, and bottled about three months before release. Sales follow a brand ramp from first release (35, 55, 75, 90, then 100% of target), oldest vintage first; unsold wine waits in inventory.</p>
+    <p><b>Building.</b> The winery is built up space by space: covered crush pad, fermentation hall sized to the tank count, barrel room sized to the barrel stock, case storage sized to the peak of bottled inventory (if kept on site), lab, tasting room, and about 12% for offices, restrooms and mechanical. Each style has its own cost per square foot for each space and its own design and engineering fee, which climbs from about 8% of construction for a metal building to 18% for a gravity-flow hillside design, plus a site work share that jumps when you cut into a slope. Gravity flow removes the must pump and most hose runs but costs far more in concrete and excavation. Buildings depreciate over 30 years.</p>
+    <p><b>Storage and tax.</b> Washington exempts business inventory, including bottled wine, from property tax, so storing on site costs the extra building, plus property tax, insurance and upkeep on that building. Off-site bonded storage swaps that for per-case monthly fees, handling, and an admin fee for bonded tax reporting. Federal excise tax is due when wine leaves bond either way, so it is not part of this choice and is not modeled yet.</p>
+    <p><b>Lab.</b> Analyses scale with lot count (tons per lot sets how many lots) times analyses per lot per year. Sending everything out costs the outside price per analysis. A basic in-house lab moves about 60% of routine work (pH, TA, SO2, Brix, VA) in-house at reagent cost plus lab time; a full lab with an enzymatic analyzer moves about 90%. Both still send out the rest.</p>
+    <p><b>Equipment sizing.</b> Tanks and barrels come from the cellar flow: for each vessel type, the most vessels in use on any day of a normal year, plus a design margin for "not quite worst case." Ferment and white tanks hold one lot each; lot tanks can combine lots of the same wine after press. Each tank type is the smallest standard size that holds its largest load, priced on a size curve (bigger tanks cost less per gallon), and blending tanks hold a whole wine. Barrels are the peak in use plus spares, which also sets the first year's barrel purchase. Press and chiller follow from tonnage. Pumps, hoses and fittings follow from the tank count; pumpover pumps are one per four red tanks. Barrels follow months in barrel and new-oak share; year one buys the whole working stock.</p>
+    <p><b>Costs.</b> Each vintage carries its fruit, estate farming, cellar labor and supplies (or custom crush fees), barrels and dry goods; that cost per case becomes cost of goods when it sells. Salaries, tasting room, utilities, insurance, maintenance, marketing and card fees are period costs. Depreciation: building 30 years, equipment 10 (half replaced in year 10), vineyard 25.</p>
+    <p><b>Financing and the owner.</b> The loan covers a share of years 0 to 2 capital spending, amortized monthly-equivalent over its term. In both cases the owner injects equity whenever cash would drop below the reserve, and takes distributions once operations are cash-positive and cash exceeds twice the reserve. If the owner is the winemaker, the owner's salary counts as payout and as a cost; if a winemaker is hired, the owner is an investor only. The 20-year IRR includes an ending value: land at its growth rate, undepreciated assets, inventory at cost and cash, less debt.</p>
+    <p><b>Land.</b> Vineyard acres follow from production: tons needed for each wine divided by its tons per acre. Only part of the vineyard ground can be planted (roads, headlands and turn rows, setbacks, rock and steep ground), so planted acres are grossed up by the plantable share. The winery site is sized from the building at a site-coverage ratio. The total is rounded up to the zoning minimum parcel, since rural agricultural zones in eastern Washington commonly set 20- or 40-acre minimums; any extra is spare land that holds value but earns nothing. Irrigated farmland is priced only when the vineyard waters from the land's own right; a winery on bought fruit, or a vineyard using a purchased right, buys cheaper dry ground, and raw ground pays to be cleared before planting.</p>
+    <p><b>Water.</b> A winery's process water usually fits under Washington's permit-exempt well rules (up to 5,000 gallons a day for industrial use), so the winery gets its own well; the busiest harvest day is checked against that limit. A vineyard of any real size needs a water right. Three ways in: land inside an irrigation district (the right comes with the land; you pay an annual assessment), land with an existing groundwater right and well (you pay to pump), or cheaper dry land plus a water right bought from someone else, a new well, and an Ecology change application whose timing and approval aren't guaranteed. A bought water right is carried like land: it doesn't depreciate and it counts in the ending value.</p>
+    <p><b>Excise.</b> Federal tax is $1.07 a gallon on still wine up to 16%, less the small-producer credit of $1.00 a gallon on the first 30,000 gallons removed from bond each year, so a winery this size pays about 7 cents a gallon. Washington's wine tax of $0.2292 a liter applies to wine the winery sells to Washington consumers; wine sold to distributors is taxed when they buy it. Washington taxes wine over 14% at the higher fortified rate unless it got there by natural fermentation and an affidavit is on file, so the model assumes the affidavit. Other states' taxes on out-of-state club shipments are not modeled.</p>
+    <p><b>Bottling.</b> Bottling is the winemaker's call, set per wine in the table as months after harvest. The default is about a month after barrel time ends (reds reach barrel in spring, around month 6), with release at least two months after bottling. If bottling comes before the barrel time is up, the barrel time is cut short and the flow tab says so. Moving bottling changes when blending tanks, barrels and case storage free up, and which year the dry goods are bought.</p>
+    <p><b>Empty barrels.</b> Barrels sit empty between the old vintage coming out and the new one going in after ML. The model counts empty barrel-days from the flow and adds sulfuring every six weeks to the labor, and the equipment list carries a barrel washing station, a hot-water pressure washer to drive it, a sulfur kit and, if chosen, an ozone generator. Racks cover every installed barrel, full or empty.</p>
+    <p><b>Cellar flow.</b> Each wine is split into lots of the chosen size, picked one every two days from the variety's typical Washington start date. Reds run through the lot simulator for their own pick date: days in the ferment tank, press, then ML in a storage tank until the cellar warms in spring, then barrel for the months set, back to tank before bottling. Whites settle two days, ferment in tank or go to barrel, then wait in tank for bottling. Bottled wine waits for release and sells evenly over the following year. Several identical vintages are laid on top of each other, so a normal year shows older wine still in barrel and bottle while the new one comes in. Tank lines count tank space including headspace during fermentation.</p>
+    <p><b>Daily labor and equipment.</b> The flow calendar also drives the work. Each lot adds its pick-day crew and sorting, press loads, twice-daily pumpovers while in tank, ferment checks, a transfer and tank cleaning at every move, barrel filling, monthly topping, a mid-term racking and washing on the way out, and bottling days on a mobile line; sold cases add shipping work. Harvest is any day a ferment is running. The crew is sized from these days: full-time staff from the off-season workload, seasonal workers from the busiest harvest week, so the dashed line shows where long days and catch-up fall. Equipment hours come from the same events, against one 10-hour shift per unit.</p>
+    <p><b>Labor.</b> Cellar labor is built from tasks. Harvest work scales with pick days (one per lot), tons sorted, press loads, red ferment days (from the lot simulator: cold soak, ferment and any extended maceration) times pumpovers, and tank turnovers, plus daily rounds whether fruit arrives or not. The rest of the year scales with barrels, storage tanks and cases. The winemaker covers a set number of hands-on hours. A full-time cellar worker is hired once the leftover off-season work reaches about 60% of a full-time job; that person works long harvest weeks with overtime past 40 hours, and seasonal workers fill whatever harvest hours remain. Labor is a production cost, so it rides in each vintage's cost per case. Salaried winemaker, admin and tasting room staff stay separate.</p>
+    <p><b>Not yet.</b> Production growing over time, income taxes, winery wastewater, risk (bad vintages, missed ramps), price inflation, and the quality value of a hired winemaker, which is why hiring currently looks like pure cost.</p>
+  </div>
+  <p class="foot">Skeleton v2. Defaults sourced where possible; see the confidence column.</p>
+</div>
+
+<script>
+{
+/*CORE*/
+/*FIN*/
+/*SRC*/
+/*FLOW*/
+let V=deepCopy(VDEF), G=deepCopy(GDEF), M=null, finView='cash', tab='money', FL=null, rng='harvest', cur=75, unit='gal';
+const TCOL={crush:'light-dark(#6f7a2a,#bcc86a)',press:'light-dark(#8c7a66,#b7a593)',cap:'var(--wine)',checks:'light-dark(#c2577a,#e892ad)',moves:'var(--loan)',barrel:'var(--oak)',bottling:'var(--good)',cases:'light-dark(#2f8f8a,#7fd0c9)',general:'light-dark(#9a9a94,#6f6f69)'};
+const LCOL={pad:'light-dark(#6f7a2a,#bcc86a)',press:'light-dark(#8c7a66,#b7a593)',redTank:'var(--wine)',whiteTank:'light-dark(#a8820f,#e5c25a)',storage:'var(--loan)',blend:'light-dark(#4a5d8a,#9aaee0)',barrel:'var(--oak)',bottled:'var(--good)'};
+const fdate=d=>{const t=new Date(2001,7,1+Math.round(d)),y=t.getFullYear()-2001;return t.toLocaleDateString('en-US',{month:'short',day:'numeric'})+(y===0?', harvest year':y===1?', year after':`, harvest +${y}`)};
+const gal=v=>v>=1e4?(v/1000).toFixed(1)+'k':n0(v);
+function rangeOf(){return rng==='harvest'?[0,153]:rng==='year'?[0,365]:[0,Math.min(FL.D-1,Math.ceil(FL.end/30)*30)]}
+function lanesNow(u=unit){return u==='ves'?(rng==='vintage'?FL.ves0:FL.ves):(rng==='vintage'?FL.lanes0:FL.lanes)}
+const capOf=k=>unit==='ves'?FL.vcaps[k]:FL.caps[k];
+const uName=(k,n)=>UNIT[k][Math.round(n)===1?0:1];
+const fmtU=(k,v)=>unit==='ves'?(k==='bottled'?n0(v):(Math.round(v*10)/10).toString().replace(/\.0$/,'')):gal(v);
+function drawFlow(){
+  const s=$('sF'),W=s.clientWidth,H=s.clientHeight;if(!FL||!W)return;
+  const [d0,d1]=rangeOf(),Ls=lanesNow(),m={l:8,r:12,t:6,b:26},nl=LOCS.length,lh=(H-m.t-m.b)/nl;
+  const x=d=>m.l+(d-d0)/(d1-d0)*(W-m.l-m.r);let g='';
+  LOCS.forEach(([k,name],i)=>{
+    const y0=m.t+i*lh,a=Ls[k],cap=capOf(k);let pk=0;for(let d=d0;d<d1;d++)pk=Math.max(pk,a[d]);
+    const top=Math.max(pk,cap||0)*1.15||1,yv=v=>y0+lh-4-v/top*(lh-22);
+    g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y0+lh-4}" y2="${y0+lh-4}" stroke="var(--rule)"/>`;
+    let p=`M${x(d0)},${yv(0)}`;for(let d=d0;d<d1;d++){const yy=yv(a[Math.min(d,FL.D-1)]).toFixed(1);p+=`L${x(d).toFixed(1)},${yy}L${x(d+1).toFixed(1)},${yy}`}p+=`L${x(d1)},${yv(0)}Z`;
+    g+=`<path d="${p}" fill="${LCOL[k]}" fill-opacity="0.75"/>`;
+    if(cap){let o='',on=false;for(let d=d0;d<=d1;d++){const v=a[Math.min(d,FL.D-1)];if(v>cap){o+=(on?'L':'M')+x(d).toFixed(1)+','+yv(v).toFixed(1);on=true}else if(on){o+=`L${x(d).toFixed(1)},${yv(cap)}`;on=false}}
+      if(o){let poly='';const segs=o.split('M').filter(Boolean);segs.forEach(sg=>{const pts=sg.split('L');const xs=pts.map(q=>q.split(',')[0]);poly+=`M${pts[0]}L${pts.slice(1).join('L')}${pts.length?`L${xs[xs.length-1]},${yv(cap)}L${xs[0]},${yv(cap)}Z`:''}`});g+=`<path d="${poly}" fill="var(--bad)"/>`}
+      g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${yv(cap)}" y2="${yv(cap)}" stroke="var(--ink)" stroke-dasharray="5 4" stroke-width="1.2"/>`}
+    g+=`<text x="${m.l+4}" y="${y0+13}" font-size="13" font-weight="600" fill="var(--ink)">${name}</text><text x="${W-m.r-4}" y="${y0+13}" font-size="12" text-anchor="end" fill="${cap&&pk>cap?'var(--bad)':'var(--mute)'}">${unit==='ves'?`peak ${fmtU(k,pk)}${cap?` of ${n0(cap)}`:''} ${uName(k,cap||pk)}${FL.size[k]?` (${n0(FL.size[k])} gal)`:''}${k==='pad'||k==='press'?' a day':''}`:`peak ${gal(pk)} gal${cap?` of ${gal(cap)}`:k==='pad'||k==='press'?' a day':''}`}</text>`;
+  });
+  const step=rng==='harvest'?1:rng==='year'?1:3;
+  for(let mo=0;mo<60;mo+=step){const d=Math.round((new Date(2001,7+mo,1)-new Date(2001,7,1))/864e5);if(d<d0||d>d1)continue;const t=new Date(2001,7+mo,1);
+    g+=`<line x1="${x(d)}" x2="${x(d)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--rule)" stroke-opacity="0.6"/><text x="${x(d)+3}" y="${H-8}" font-size="12" fill="var(--mute)">${t.toLocaleDateString('en-US',{month:'short'})}${t.getMonth()<step||mo===0?" '"+String(t.getFullYear()-2001+26).padStart(2,'0'):''}</text>`}
+  g+=`<line class="cur" data-x0="${m.l}" data-x1="${W-m.r}" x1="${x(cur)}" x2="${x(cur)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink)" stroke-width="2"/>`;
+  s.innerHTML=g;
+  const sc=$('scrub');sc.min=d0;sc.max=d1;sc.value=cur;
+  drawGantt(d0,d1);drawWork(d0,d1);snap();
+}
+function drawWork(d0,d1){
+  const own=G.facility==='build'&&M.lbr;$('workBlock').hidden=!own;if(!own)return;
+  const W=M.lbr.WK,Tt=rng==='vintage'?W.T0:W.T,Ee=rng==='vintage'?W.E0:W.E,av=M.lbr.avail;
+  // labor: stacked step areas
+  let s=$('sL'),Wd=s.clientWidth,H=s.clientHeight,m={l:40,r:12,t:8,b:24};if(!Wd)return;
+  const x=d=>m.l+(d-d0)/(d1-d0)*(Wd-m.l-m.r);let top=1;const tot=new Float64Array(d1-d0+1);
+  for(let d=d0;d<=d1;d++){let t=0;TASKS.forEach(([k])=>t+=Tt[k][Math.min(d,FL.D-1)]);tot[d-d0]=t;top=Math.max(top,t,rng==='vintage'?0:av[d%365])}
+  top*=1.1;const yv=v=>H-m.b-v/top*(H-m.t-m.b);let g='';
+  const step=top>60?20:top>30?10:5;for(let v=0;v<=top;v+=step)g+=`<line x1="${m.l}" x2="${Wd-m.r}" y1="${yv(v)}" y2="${yv(v)}" stroke="var(--rule)"/><text x="${m.l-6}" y="${yv(v)+4}" font-size="11" text-anchor="end" fill="var(--mute)">${v}</text>`;
+  const base=new Float64Array(d1-d0+1);
+  TASKS.forEach(([k])=>{let up='',dn='';for(let d=d0;d<d1;d++){const i=d-d0,v=Tt[k][Math.min(d,FL.D-1)],y0=yv(base[i]),y1=yv(base[i]+v);up+=`${i?'L':'M'}${x(d).toFixed(1)},${y1.toFixed(1)}L${x(d+1).toFixed(1)},${y1.toFixed(1)}`;dn=`L${x(d+1).toFixed(1)},${y0.toFixed(1)}L${x(d).toFixed(1)},${y0.toFixed(1)}`+dn;base[i]+=v}
+    g+=`<path d="${up}${dn}Z" fill="${TCOL[k]}" fill-opacity="0.85"/>`});
+  if(rng!=='vintage'){let p='';for(let d=d0;d<d1;d++){const y=yv(av[d%365]).toFixed(1);p+=`${d===d0?'M':'L'}${x(d).toFixed(1)},${y}L${x(d+1).toFixed(1)},${y}`}g+=`<path d="${p}" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-dasharray="5 4"/>`}
+  g+=`<line class="cur" data-x0="${m.l}" data-x1="${Wd-m.r}" x1="${x(cur)}" x2="${x(cur)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink)" stroke-width="2"/>`+axisM(x,d0,d1,H-6);
+  s.innerHTML=g;
+  $('laborLegend').innerHTML=TASKS.map(([k,n])=>`<span><i style="background:${TCOL[k]}"></i>${n}</span>`).join('')+(rng==='vintage'?'':`<span><i style="background:var(--ink);height:2px"></i>Crew on hand (dashed)</span>`);
+  const L=M.lbr;$('laborLede').textContent=`Busiest day about ${n0(L.peakDay)} hours. Harvest (any ferment running) lasts about ${L.harvestWeeks.toFixed(1)} weeks. Crew: ${G.owner==='hire'?'the winemaker':'you as winemaker'}${L.perms?`, ${L.perms} full-time`:''}${L.partHrs>0?`, ${n0(L.partHrs)} part-time hours`:''}, and ${L.seasonalHeads} seasonal at harvest, sized to the busiest week. Days above the dashed line are long days or catch-up.`;
+  // equipment lanes
+  s=$('sE');Wd=s.clientWidth;H=s.clientHeight;const nl=EQUIP.length,lh=(H-m.t-m.b)/nl,xe=d=>8+(d-d0)/(d1-d0)*(Wd-8-12);g='';
+  EQUIP.forEach(([k,name],i)=>{const y0=m.t+i*lh,a=Ee[k],u=W.units[k];let pk=0,yr=0;for(let d=d0;d<d1;d++)pk=Math.max(pk,a[Math.min(d,FL.D-1)]);for(let d=0;d<365;d++)yr+=W.E[k][d];
+    const cap=u*G.shiftHrs,tp=Math.max(pk,cap)*1.15||1,yv2=v=>y0+lh-4-v/tp*(lh-22);
+    g+=`<line x1="8" x2="${Wd-12}" y1="${y0+lh-4}" y2="${y0+lh-4}" stroke="var(--rule)"/>`;
+    let p=`M${xe(d0)},${yv2(0)}`;for(let d=d0;d<d1;d++){const y=yv2(a[Math.min(d,FL.D-1)]).toFixed(1);p+=`L${xe(d).toFixed(1)},${y}L${xe(d+1).toFixed(1)},${y}`}p+=`L${xe(d1)},${yv2(0)}Z`;
+    g+=`<path d="${p}" fill="${pk>cap?'var(--bad)':'var(--loan)'}" fill-opacity="0.75"/>`;
+    if(u)g+=`<line x1="8" x2="${Wd-12}" y1="${yv2(cap)}" y2="${yv2(cap)}" stroke="var(--ink)" stroke-dasharray="5 4" stroke-width="1.2"/>`;
+    g+=`<text x="12" y="${y0+13}" font-size="13" font-weight="600" fill="var(--ink)">${name}${u>1?` (${u})`:''}</text><text x="${Wd-16}" y="${y0+13}" font-size="12" text-anchor="end" fill="${pk>cap?'var(--bad)':'var(--mute)'}">${u?`peak ${pk.toFixed(1)} hrs/day, ${n0(yr)} hrs a year`:'none installed'}</text>`});
+  g+=`<line class="cur" data-x0="8" data-x1="${Wd-12}" x1="${xe(cur)}" x2="${xe(cur)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink)" stroke-width="2"/>`+axisM(xe,d0,d1,H-6);
+  s.innerHTML=g;
+}
+function axisM(x,d0,d1,y){let g='';const st=rng==='vintage'?3:1;for(let mo=0;mo<60;mo+=st){const d=Math.round((new Date(2001,7+mo,1)-new Date(2001,7,1))/864e5);if(d<d0||d>d1)continue;const t=new Date(2001,7+mo,1);g+=`<text x="${x(d)+3}" y="${y}" font-size="12" fill="var(--mute)">${t.toLocaleDateString('en-US',{month:'short'})}</text>`}return g}
+function drawGantt(d0,d1){
+  const s=$('sG'),W=s.clientWidth;if(!W)return;const L=FL.lots,rh=20,lab=150,m={t:6,r:12};
+  const H=m.t+L.length*rh+8;s.parentNode.style.minHeight=H+'px';
+  const x=d=>lab+(Math.max(d0,Math.min(d1,d))-d0)/(d1-d0)*(W-lab-m.r);let g='';
+  L.forEach((l,i)=>{const y=m.t+i*rh;g+=`<text x="4" y="${y+14}" font-size="13" fill="var(--ink)">${l.name}${l.n>1?' '+(l.j+1):''}</text>`;
+    l.segs.forEach(sg=>{if(sg.b<d0||sg.a>d1)return;const w=Math.max(sg.ev?3:1,x(sg.b)-x(sg.a));g+=`<rect x="${x(sg.a)}" y="${y+3}" width="${w}" height="${rh-6}" fill="${LCOL[sg.loc]}"><title>${LOCS.find(q=>q[0]===sg.loc)[1]}: ${fdate(sg.a)} to ${fdate(sg.b)}</title></rect>`})});
+  g+=`<line class="cur" data-x0="${lab}" data-x1="${W-m.r}" x1="${x(cur)}" x2="${x(cur)}" y1="0" y2="${H}" stroke="var(--ink)" stroke-width="2"/>`;
+  s.innerHTML=g;
+}
+function snap(){
+  const Ls=lanesNow(),d=Math.max(0,Math.min(FL.D-1,cur)),ago=['this vintage','last vintage','two vintages back','three vintages back'];
+  const here={};LOCS.forEach(([k])=>here[k]={});
+  for(let k=-3;k<=1;k++){if(rng==='vintage'&&k!==0)continue;FL.lots.forEach(l=>l.segs.forEach(sg=>{if(sg.loc==='bottled')return;const a=sg.a+365*k,b=sg.b+365*k;if(d>=Math.floor(a)&&d<Math.ceil(b)){const key=`${l.name}, ${k>0?'next vintage':ago[-k]}`;here[sg.loc][key]=(here[sg.loc][key]||0)+1}}))}
+  const LG=lanesNow('gal'),LV=lanesNow('ves');
+  $('snap').innerHTML=`<h3>${fdate(d)}</h3><div class="dlab" style="margin-bottom:6px">${rng==='vintage'?'This vintage only':'Every vintage in the building that day'}</div>`+LOCS.map(([k,name])=>{
+    const v=LG[k][d],n=LV[k][d],cap=FL.vcaps[k],lots=Object.entries(here[k]).map(([nm,ct])=>`${nm}${ct>1?` (${Math.round(ct)} lots)`:''}`);
+    const nn=k==='bottled'?n0(n):Math.round(n*10)/10;
+    const use=v?(cap?`${nn} of ${n0(cap)} ${uName(k,cap)}`:`${nn} ${uName(k,n)}`):'';
+    return `<div class="row${cap&&n>cap+1e-6?' over':''}"><i style="background:${LCOL[k]}"></i><span>${name}</span><b>${v?gal(v)+' gal':'empty'}${use?' · '+use:''}</b>${v&&lots.length&&k!=='bottled'?`<small>${lots.join('; ')}</small>`:''}</div>`}).join('')+workSnap(d);
+}
+function workSnap(d){if(!(G.facility==='build'&&M.lbr))return'';const W=M.lbr.WK,Tt=rng==='vintage'?W.T0:W.T,Ee=rng==='vintage'?W.E0:W.E;
+  const tk=TASKS.map(([k,n])=>[n,Tt[k][d]]).filter(x=>x[1]>0.05).sort((a,b)=>b[1]-a[1]),tot=tk.reduce((a,x)=>a+x[1],0);
+  const eq=EQUIP.map(([k,n])=>[n,Ee[k][d],W.units[k]]).filter(x=>x[1]>0.05);
+  return `<h3 style="margin-top:14px">Work that day</h3><div class="row"><i style="background:var(--ink)"></i><span>Cellar labor</span><b>${tot.toFixed(1)} hrs${rng==='vintage'?'':` of ${M.lbr.avail[d%365].toFixed(0)} on hand`}</b>${tk.length?`<small>${tk.map(([n,h])=>`${n} ${h.toFixed(1)}`).join('; ')}</small>`:''}</div>`+
+   (eq.length?eq.map(([n,h,u])=>`<div class="row${h>u*G.shiftHrs?' over':''}"><i style="background:var(--loan)"></i><span>${n}</span><b>${h.toFixed(1)} hrs</b></div>`).join(''):'<div class="row"><i></i><span>Equipment</span><b>idle</b></div>');
+}
+function flowLede(){
+  if(G.facility!=='build'){$('flowLede').textContent='Custom crush: this is your wine moving through someone else\'s cellar, so there is nothing to size and no capacity lines. Barrel counts still set how many barrels you buy.';return}
+  const S=M.sz,N=FL.need,mg=Math.round((G.designFactor-1)*100);
+  $('flowLede').textContent=`The equipment list is sized from this flow: the most vessels in use on any day of a normal year, plus the ${mg}% design margin. That gives ${S.nRed} red ferment tanks of ${n0(FL.size.redTank)} gallons, ${S.nW} white tanks of ${n0(FL.size.whiteTank)}, ${S.nS} lot tanks of ${n0(FL.size.storage)}, ${S.nB} blending tanks of ${n0(FL.size.blend)}, and ${n0(S.barrels)} barrels (peak ${n0(N.barrel.v)} in use plus spares). Each tank type is the smallest standard size that holds the largest lot. Lower the design margin under the assumptions to see where it breaks.`+Object.entries(FL.short).map(([i,mo])=>` ${V[i].name} bottles before its barrel time is up, so it only gets about ${Math.round(mo)} months in barrel; push its bottling later in the wine table.`).join('');
+}
+function renderFlow(){if(tab!=='flow')return;FL=M.FL;const S=M.sz;
+  FL.vcaps=G.facility==='build'?{redTank:S.nRed,whiteTank:S.nW,storage:S.nS,blend:S.nB,barrel:S.barrels}:{};
+  FL.caps={};for(const k in FL.vcaps)FL.caps[k]=FL.vcaps[k]*(k==='barrel'?59.4:FL.size[k]);
+  flowLede();drawFlow()}
+
+const $=id=>document.getElementById(id);
+const money=v=>{const a=Math.abs(v),s=v<0?'-':'';return a>=1e6?s+'$'+(a/1e6).toFixed(2)+'M':a>=1e4?s+'$'+Math.round(a/1e3)+'k':s+'$'+Math.round(a).toLocaleString()};
+const n0=v=>Math.round(v).toLocaleString();
+
+const decisions=[
+ ['fruit','Fruit',[['buy','Buy grapes'],['estate','Plant an estate vineyard']]],
+ ['facility','Production',[['build','Build a winery'],['custom','Custom crush']]],
+ ['tasting','Tasting room',[[true,'Yes'],[false,'No']]],
+ ['owner','Winemaker',[['winemaker','Owner makes the wine'],['hire','Hire a winemaker']]],
+ ['buildTier','Building style',[['shell','Metal building'],['custom','Custom production'],['gravity','Gravity-flow hillside']]],
+ ['storage','Bottled wine storage',[['onsite','On site'],['offsite','Off-site bonded']]],
+ ['lab','Lab work',[['outsource','Send it all out'],['basic','Basic in-house'],['full','Full in-house']]],
+ ['sort','Sorting',[['none','None'],['hand','Hand table'],['optical','Optical']]],
+ ['water','Vineyard water (estate fruit)',[['district','Irrigation district'],['well','Own well, right comes with land'],['buyRight','Dry land plus a bought water right']]],
+ ['ozone','Barrel and tank sanitizing',[[true,'Ozone plus hot water'],[false,'Hot water and SO2 only']]]
+];
+const buildOnly=['buildTier','storage','lab','sort','ozone'];
+$('decisions').innerHTML=decisions.map(([k,l,opts])=>`<div><div class="dlab">${l}</div><div class="seg">${opts.map(([v,t])=>`<button data-d="${k}" data-v="${v}">${t}</button>`).join('')}</div></div>`).join('');
+
+const wcols=[['cases','Cases/yr',100,20000,50],['price','Retail $/btl',10,300,1],['bottle','Months to bottling',2,60,1],['release','Months to release',3,72,1],['barrel','Months in barrel',0,36,1],['newOak','% new oak',0,100,5],['grape','Grapes $/ton',500,15000,50]];
+function renderWines(){
+  $('wines').innerHTML=`<thead><tr><th>Wine</th><th></th><th>Color</th>${wcols.map(c=>`<th>${c[1]}</th>`).join('')}<th>Tons</th></tr></thead><tbody>`+
+   V.map((v,i)=>`<tr><td><select data-i="${i}" data-f="name" aria-label="Variety">${varOpts(v.name)}</select></td><td><button data-rm="${i}" aria-label="Remove ${v.name}" title="Remove"${V.length<2?' disabled':''}>&times;</button></td><td><select data-i="${i}" data-f="color" aria-label="${v.name} color"><option value="white"${v.color==='white'?' selected':''}>white</option><option value="red"${v.color==='red'?' selected':''}>red</option></select></td>${wcols.map(([f,,mn,mx,st])=>`<td><input type="number" data-i="${i}" data-f="${f}" min="${mn}" max="${mx}" step="${st}" value="${v[f]}" aria-label="${v.name} ${f}"></td>`).join('')}<td>${(v.cases/v.cpt).toFixed(1)}</td></tr>`).join('')+
+   `<tr><td><b>Total</b></td><td></td><td></td><td><b>${n0(V.reduce((a,v)=>a+v.cases,0))}</b></td><td colspan="6"></td><td><b>${V.reduce((a,v)=>a+v.cases/v.cpt,0).toFixed(1)}</b></td></tr></tbody>`;
+}
+const VN=Object.keys(VARIETIES);
+const varOpts=sel=>['red','white'].map(col=>`<optgroup label="${col==='red'?'Reds':'Whites'}">`+VN.filter(n=>VARIETIES[n].color===col).map(n=>`<option${n===sel?' selected':''}>${n}</option>`).join('')+'</optgroup>').join('')+(VN.includes(sel)?'':`<option selected>${sel}</option>`);
+$('addVar').innerHTML=varOpts('Syrah');
+$('addWine').addEventListener('click',()=>{V.push({name:$('addVar').value,cases:500,...VARIETIES[$('addVar').value]});run()});
+$('wines').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(b&&V.length>1){V.splice(+b.dataset.rm,1);run()}});
+$('wines').addEventListener('change',e=>{const t=e.target,i=t.dataset.i,f=t.dataset.f;if(i===undefined)return;if(f==='name'){V[i]={name:t.value,cases:V[i].cases,...VARIETIES[t.value]};run();return}V[i][f]=f==='color'?t.value:Math.max(+t.min,Math.min(+t.max,+t.value||0));if(V[i].bottle==null)V[i].bottle=bottleOf(V[i]);if(f==='bottle'&&V[i].release<V[i].bottle)V[i].release=V[i].bottle;if(f==='release'&&V[i].bottle>V[i].release)V[i].bottle=V[i].release;run(true)});
+
+const groups=[
+ ['Land and building',[['landAcre','Irrigated farmland',3000,150000,500,v=>money(v)+'/acre'],['dryLandAcre','Dry, ranch or scrub land',500,20000,250,v=>money(v)+'/acre'],['plantablePct','Plantable share of vineyard ground',50,95,1,v=>v+'%'],['siteCoverage','Buildings as share of the winery site',3,40,1,v=>v+'%'],['minParcel','Zoning minimum parcel',0,80,1,v=>v?v+' acres':'none'],['rawPrepAcre','Clearing raw ground for planting',0,6000,100,v=>money(v)+'/acre'],['landGrowth','Land appreciation',0,6,0.5,v=>v+'%/yr'],['trSqft','Tasting room size',500,6000,100,v=>n0(v)+' sq ft'],['sfPerKgal','Fermentation hall per 1,000 gal of tanks',15,70,1,v=>v+' sq ft'],['sfPerBarrel','Barrel room per barrel',1.5,8,0.5,v=>v+' sq ft'],['sfPerCaseStored','Case storage per bottled case',0.05,0.4,0.01,v=>v.toFixed(2)+' sq ft'],['permitPct','Permits',0,3,0.25,v=>v+'% of construction'],['trFitout','Leased tasting room fit-out',50000,1000000,10000,money]]],
+ ['Vineyard',[['vineDevAcre','Development cost, excluding irrigation',15000,80000,1000,v=>money(v)+'/acre'],['farmAcre','Farming cost',2000,12000,250,v=>money(v)+'/acre/yr']]],
+ ['Equipment and barrels',[['jacketGal','Jacketed tank cost at 1,000 gal',4,20,0.5,v=>'$'+v+'/gal'],['storageGal','Storage tank cost at 1,000 gal',3,15,0.5,v=>'$'+v+'/gal'],['hoseFt','2" wine hose',5,60,1,v=>'$'+v+'/ft'],['designFactor','Design margin over peak vessels in use',0.7,1.5,0.05,v=>'+'+Math.round((v-1)*100)+'%'],['barrelNew','New barrel',600,2000,25,v=>'$'+v],['barrelUsed','Used barrel',100,800,25,v=>'$'+v],['lotsPerTank','Lots of one wine sharing a lot tank after press',1,4,1,v=>v===1?'kept separate':v+' lots'],['barrelSpare','Spare barrels over peak',1,1.2,0.01,v=>'+'+Math.round((v-1)*100)+'%']]],
+ ['Production',[['suppliesCase','Cellar supplies (yeast, SO2, chemicals)',2,25,0.5,v=>'$'+v+'/case'],['customCase','Custom crush fee',20,120,1,v=>'$'+v+'/case'],['bottlePer','Dry goods per bottle',1,8,0.1,v=>'$'+v.toFixed(2)],['carton','Carton',1,6,0.1,v=>'$'+v.toFixed(2)],['bottling','Mobile bottling',1,8,0.25,v=>'$'+v.toFixed(2)+'/case']]],
+ ['People',[['ownerSalary','Owner salary as winemaker',0,250000,5000,money],['wmSalary','Hired winemaker salary',60000,250000,5000,money],['burden','Payroll burden',10,40,1,v=>v+'%'],['trStaff','Tasting room staff',0,500000,10000,v=>money(v)+'/yr'],['adminCost','Admin, compliance, accounting',0,250000,5000,v=>money(v)+'/yr']]],
+ ['Labor',[['cellarWage','Cellar worker wage',17.13,40,0.25,v=>'$'+v.toFixed(2)+'/hr'],['seasonalWage','Harvest worker wage',17.13,35,0.25,v=>'$'+v.toFixed(2)+'/hr'],['seasonalBurden','Seasonal payroll burden',5,30,1,v=>v+'%'],['bottlePerDay','Mobile bottling line',400,3000,100,v=>n0(v)+' cases/day'],['crushCrew','Crew on a crush day',2,10,1,v=>v+' people'],['capHrs','Per pumpover or punchdown',0.1,1,0.05,v=>v.toFixed(2)+' hr'],['generalHrs','General cellar work off-season',0,60,1,v=>v+' hr/week'],['wmHarvestHrs','Winemaker hands-on, harvest',0,70,1,v=>v+' hr/week'],['wmCellarHrs','Winemaker hands-on, rest of year',0,40,1,v=>v+' hr/week'],['permHarvestHrs','Full-time crew hours in harvest',40,70,1,v=>v+' hr/week']]],
+ ['Overhead',[['utilBase','Utilities base',0,80000,1000,money],['insurePct','Insurance',0,2,0.1,v=>v+'% of capital'],['maintPct','Maintenance',0,4,0.1,v=>v+'% of build and equipment'],['marketingPct','Marketing',0,15,0.5,v=>v+'% of revenue'],['dtcFeePct','Card and DTC fees',0,6,0.5,v=>v+'%'],['trLease','Tasting room lease (custom crush)',0,200000,5000,v=>money(v)+'/yr']]],
+ ['Water',[['dripAcre','Drip and filtration',1000,8000,100,v=>money(v)+'/acre'],['afPerAcre','Vineyard water use',0.5,4,0.1,v=>v.toFixed(1)+' acre-ft/acre/yr'],['districtAcre','Irrigation district assessment',0,500,10,v=>'$'+v+'/acre/yr'],['waterRightAF','Water right price',500,10000,100,v=>money(v)+'/acre-ft'],['rightTransfer','Water right transfer work',0,100000,2500,money],['irrWellDepth','Irrigation well depth',100,1200,25,v=>v+' ft'],['irrWellFt','Irrigation well drilling',30,200,5,v=>'$'+v+'/ft'],['liftFt','Pumping lift',50,1000,25,v=>v+' ft'],['kwh','Power',0.04,0.25,0.005,v=>'$'+v.toFixed(3)+'/kWh'],['wineryWellDepth','Winery well depth',50,1000,25,v=>v+' ft'],['wineryWellFt','Winery well drilling',20,120,1,v=>'$'+v+'/ft'],['waterRatio','Process water',1,10,0.5,v=>v+' gal per gal of wine']]],
+ ['Excise tax',[['fedExcise','Federal rate before credit',0.5,2,0.01,v=>'$'+v.toFixed(2)+'/gal'],['waTaxL','Washington wine tax',0,0.6,0.0001,v=>'$'+v.toFixed(4)+'/liter'],['waShare','Direct sales to Washington residents',0,100,5,v=>v+'%']]],
+ ['Storage, tax and lab',[['propTaxPct','Property tax',0,2,0.05,v=>v.toFixed(2)+'% of land, building, equipment'],['offsiteCaseMonth','Off-site storage',0.1,1,0.05,v=>'$'+v.toFixed(2)+'/case/month'],['offsiteInOut','Off-site handling',0,3,0.25,v=>'$'+v.toFixed(2)+'/case in or out'],['offsiteAdmin','Off-site bond admin',0,10000,250,v=>money(v)+'/yr'],['lotTons','Tons per lot',1,20,1,v=>v+' tons'],['testsPerLot','Analyses per lot per year',3,40,1,v=>v],['testExt','Outside lab price',10,100,1,v=>'$'+v+'/analysis'],['labWage','Lab time',15,60,1,v=>'$'+v+'/hr']]],
+ ['Sales',[['clubDisc','Club discount',0,30,1,v=>v+'%'],['wholesaleFactor','Wholesale price',30,70,1,v=>v+'% of retail']]],
+ ['Financing',[['loanLTV','Loan share of startup capital',0,90,5,v=>v+'%'],['loanRate','Interest rate',3,12,0.25,v=>v+'%'],['loanTerm','Term',5,30,1,v=>v+' years'],['reserve','Minimum cash reserve',25000,1000000,25000,money],['distPct','Share of excess cash distributed',0,100,5,v=>v+'%'],['discount','Discount rate for NPV',3,15,0.5,v=>v+'%']]]
+];
+const fmt={};
+$('groups').innerHTML=groups.map(([g,cs])=>`<fieldset><legend>${g}</legend>`+cs.map(([k,l,mn,mx,st,f])=>{fmt[k]=f;return `<div class="ctl" id="c_${k}"><label for="i_${k}">${l}</label><output id="o_${k}"></output><input type="range" id="i_${k}" min="${mn}" max="${mx}" step="${st}"></div>`}).join('')+`</fieldset>`).join('')+
+ `<fieldset><legend>Channel mix</legend><p class="dlab">With a tasting room: ${G.shareTR[0]}% tasting room, ${G.shareTR[1]}% club, ${G.shareTR[2]}% wholesale. Without: ${G.shareNoTR[0]}%, ${G.shareNoTR[1]}%, ${G.shareNoTR[2]}%. Brand ramp from first release: ${G.ramp.join(', ')}% of target.</p><button id="reset">Reset all assumptions</button></fieldset>`;
+$('groups').addEventListener('input',e=>{const k=e.target.id&&e.target.id.slice(2);if(k in fmt){G[k]=+e.target.value;run()}});
+
+function card(f,label){
+  const y=v=>v==null?'not within 20 years':'year '+v;
+  return `<h3>${label}</h3><div class="sub">${f.loanAmt?money(f.loanAmt)+' loan at '+G.loanRate+'%, '+G.loanTerm+' years':'no debt'}</div>
+  <div class="big">${money(f.equityTot)}</div><div class="sub">owner capital put in over the life of the plan</div>
+  <div class="row"><span>Profitable every year from</span><span>${y(f.firstProfit)}</span></div>
+  <div class="row"><span>Owner's cash fully back</span><span>${y(f.payback)}</span></div>
+  <div class="row"><span>Owner payout, years 11 to 20</span><span>${money(f.avgPayout)}/yr</span></div>
+  <div class="row"><span>20-year IRR with ending value</span><span>${f.irr==null?'n/a':(f.irr*100).toFixed(1)+'%'}</span></div>
+  <div class="row"><span>NPV at ${G.discount}%</span><span class="${f.npv<0?'neg':'pos'}">${money(f.npv)}</span></div>
+  ${f.loanAmt?`<div class="row"><span>Weakest debt coverage once selling</span><span class="${f.minDscr<1.25?'neg':''}">${f.minDscr==null?'n/a':f.minDscr.toFixed(2)+'x'}</span></div>`:''}`;
+}
+function drawJ(){
+  const s=$('sJ'),W=s.clientWidth,H=s.clientHeight;if(!M||!W)return;
+  const nar=W<520,m={l:nar?48:62,r:14,t:16,b:30},Y=G.years;
+  const series=[['cash','var(--wine)'],['loan','var(--loan)']].filter(([k])=>k==='cash'||M.fin.loan.loanAmt>0);
+  const all=series.flatMap(([k])=>M.fin[k].out.map(o=>o.cum));
+  let lo=Math.min(0,...all),hi=Math.max(0,...all);const pad=(hi-lo)*0.08||1;lo-=pad;hi+=pad;
+  const x=y=>m.l+y/Y*(W-m.l-m.r), yv=v=>m.t+(1-(v-lo)/(hi-lo))*(H-m.t-m.b);
+  let g='';const step=(hi-lo)/5;
+  for(let i=0;i<=5;i++){const v=lo+i*step;g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${yv(v)}" y2="${yv(v)}" stroke="var(--rule)"/><text x="${m.l-6}" y="${yv(v)+4}" text-anchor="end" font-size="12" fill="var(--mute)">${money(v)}</text>`}
+  g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${yv(0)}" y2="${yv(0)}" stroke="var(--mute)" stroke-width="1.5"/>`;
+  for(let y=0;y<=Y;y+=nar?5:2)g+=`<text x="${x(y)}" y="${H-10}" text-anchor="middle" font-size="12" fill="var(--mute)">${y===0?'build':'yr '+y}</text>`;
+  series.forEach(([k,c])=>{const o=M.fin[k].out;g+=`<path d="${o.map((p,i)=>(i?'L':'M')+x(p.y).toFixed(1)+','+yv(p.cum).toFixed(1)).join('')}" fill="none" stroke="${c}" stroke-width="3"/>`;
+    const lowI=o.reduce((b,p,i)=>p.cum<o[b].cum?i:b,0);g+=`<circle cx="${x(o[lowI].y)}" cy="${yv(o[lowI].cum)}" r="5" fill="${c}"/><text x="${x(o[lowI].y)+8}" y="${yv(o[lowI].cum)+(k==='cash'?16:-8)}" font-size="13" fill="${c}">deepest ${money(o[lowI].cum)}</text>`;
+    const pb=M.fin[k].payback;if(pb!=null)g+=`<circle cx="${x(pb)}" cy="${yv(o[pb].cum)}" r="5" fill="var(--bg)" stroke="${c}" stroke-width="2"/>`});
+  s.innerHTML=g;
+}
+function drawY(){
+  const s=$('sY'),W=s.clientWidth,H=s.clientHeight;if(!M||!W)return;
+  const nar=W<520,m={l:nar?48:62,r:nar?44:56,t:14,b:28},Y=G.years,R=M.rows;
+  const top=Math.max(...R.map(r=>Math.max(r.rev,r.prodCash+r.opex+r.capex)))*1.08||1;
+  const invTop=Math.max(...R.map(r=>r.inv))*1.1||1;
+  const bw=(W-m.l-m.r)/(Y+1), x=y=>m.l+y*bw, yv=v=>m.t+(1-v/top)*(H-m.t-m.b), yi=v=>m.t+(1-v/invTop)*(H-m.t-m.b);
+  let g='';[0,top/2.16,top/1.08].forEach(v=>g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${yv(v)}" y2="${yv(v)}" stroke="var(--rule)"/><text x="${m.l-6}" y="${yv(v)+4}" text-anchor="end" font-size="12" fill="var(--mute)">${money(v)}</text>`);
+  [0,invTop/2.2,invTop/1.1].forEach(v=>g+=`<text x="${W-m.r+6}" y="${yi(v)+4}" font-size="12" fill="var(--oak)">${v>=1000?(v/1000).toFixed(1).replace('.0','')+'k':Math.round(v)}</text>`);
+  const capTop=Math.min(...R.map(r=>yv(r.prodCash+r.opex+r.capex)));
+  R.forEach(r=>{const x0=x(r.y)+bw*0.12,w=bw*0.36;
+    g+=`<rect x="${x0}" y="${yv(r.rev)}" width="${w}" height="${yv(0)-yv(r.rev)}" fill="var(--good)"/>`;
+    let b=0;[[r.prodCash,'var(--wine)'],[r.opex,'var(--mute)'],[r.capex,'var(--bad)']].forEach(([v,c])=>{if(v<=0)return;const h=Math.min(yv(b)-yv(b+v),H);g+=`<rect x="${x0+w+2}" y="${Math.max(m.t,yv(b+v))}" width="${w}" height="${Math.max(0,yv(b)-Math.max(m.t,yv(b+v)))}" fill="${c}"/>`;b+=v});
+    if(r.y%(nar?5:2)===0)g+=`<text x="${x(r.y)+bw/2}" y="${H-10}" text-anchor="middle" font-size="12" fill="var(--mute)">${r.y===0?'0':r.y}</text>`});
+  if(R[0].capex>top*0.9)g+=`<text x="${x(0)+bw}" y="${m.t+12}" font-size="12" fill="var(--bad)">year 0 capital ${money(R[0].capex)}, clipped</text>`;
+  g+=`<path d="${R.map((r,i)=>(i?'L':'M')+(x(r.y)+bw/2).toFixed(1)+','+yi(r.inv).toFixed(1)).join('')}" fill="none" stroke="var(--oak)" stroke-width="2.5"/>`;
+  s.innerHTML=g;
+}
+function years(){
+  const F=M.fin[finView].out,R=M.rows,cls=v=>v<0?' class="neg"':'';
+  const cols=[['Year',r=>r.y===0?'0 build':r.y],['Cases sold',r=>n0(r.sold)],['Inventory',r=>n0(r.inv)],['Revenue',r=>money(r.rev)],['Cost of goods',r=>money(r.cogs)],['Operating costs',r=>money(r.opex)],['EBITDA',r=>money(r.ebitda),r=>r.ebitda],['Capital',r=>money(r.capex)],['Debt service',(r,f)=>money(f.interest+f.principal)],['Owner in',(r,f)=>f.equity?money(-f.equity):''],['Owner out',(r,f)=>f.dist+f.ownerSal?money(f.dist+f.ownerSal):''],['Owner cumulative',(r,f)=>money(f.cum),(r,f)=>f.cum],['Cash',(r,f)=>money(f.cash)]];
+  $('years').innerHTML=`<thead><tr>${cols.map(c=>`<th>${c[0]}</th>`).join('')}</tr></thead><tbody>`+R.map((r,i)=>`<tr>${cols.map(c=>{const v=c[2]?c[2](r,F[i]):0;return `<td${cls(v)}>${c[1](r,F[i])}</td>`}).join('')}</tr>`).join('')+'</tbody>';
+}
+function implied(){
+  const m=M,lines={};m.capLines.forEach(c=>lines[c.label]=(lines[c.label]||0)+c.amt);
+  const own=G.facility==='build';
+  $('impliesLede').textContent=`${n0(m.totCases)} cases from ${m.allTons.toFixed(1)} tons a year. `+(G.fruit==='estate'?`${m.acres.toFixed(1)} vineyard acres, first crop year 3, full crop year 5, with bought fruit filling the gap. `:'All fruit bought on contract. ')+(own?`A ${n0(m.bld.sqft)} sq ft ${m.bld.T.name.toLowerCase()}${G.tasting?' with tasting room':''}, ${money(m.bld.total)} all in. `:`No winery: production at a custom crush facility${G.tasting?', with a leased tasting room':''}. `)+`Total capital over the plan: ${money(m.capexTotal)}.`;
+  const hdr=t=>`<tr><td colspan="5" style="padding-top:16px"><b>${t}</b></td></tr>`;
+  let eq='';
+  if(own){
+    const b=m.bld;
+    eq+=hdr(`Building: ${b.T.name}, design and engineering ${b.T.design}% of construction, site work ${b.T.site}%`);
+    eq+=b.spaces.map(s=>`<tr><td>${s.k}</td><td>${n0(s.sf)} sq ft</td><td>$${s.rate}/sq ft</td><td>${money(s.build+s.design)}</td><td>${money(s.build)} build plus ${money(s.design)} design. ${s.why}</td></tr>`).join('');
+    eq+=`<tr><td>Site work and excavation</td><td></td><td></td><td>${money(b.site)}</td><td>${G.buildTier==='gravity'?'cut into the slope for three working levels, retaining walls, larger site':'grading, utilities, paving'}</td></tr><tr><td>Permits</td><td></td><td></td><td>${money(b.permits)}</td><td>${G.permitPct}% of construction</td></tr>`;
+    const cats=[...new Set(m.sz.items.map(i=>i.cat))];
+    cats.forEach(ct=>{const its=m.sz.items.filter(i=>i.cat===ct);eq+=hdr(`${ct}: ${money(its.reduce((a,i)=>a+i.cost,0))}`)+its.map(i=>`<tr><td>${i.k}</td><td>${n0(i.n)}${i.unit==='ft'?' ft':''}</td><td>${i.unit==='ft'?'$'+i.each.toFixed(0)+'/ft':i.unit}</td><td>${money(i.cost)}</td><td>${i.why}</td></tr>`).join('')});
+  }
+  const L=m.lab;
+  eq+=hdr(`Lab program: ${L.name}, ${money(L.cost)} a year`)+`<tr><td>Lots and analyses</td><td>${L.lots} lots</td><td>${n0(L.tests)} a year</td><td></td><td>${n0(L.inTests)} run in-house, ${n0(L.outTests)} sent out at $${G.testExt}${own?'':'; the custom crush fee covers about half of routine panels'}</td></tr>`;
+  const r8=m.rows[Math.min(8,m.rows.length-1)].fixed;
+  const LD=m.LD;if(LD.bought>0){eq+=hdr(`Land: ${LD.bought.toFixed(1)} acres at ${money(LD.priceAcre)}/acre, ${money(LD.bought*LD.priceAcre)}`)+
+   (LD.planted?`<tr><td>Planted vineyard</td><td>${LD.planted.toFixed(1)} acres</td><td></td><td></td><td>tons needed divided by tons per acre, wine by wine</td></tr><tr><td>Roads, headlands, unplantable ground</td><td>${LD.unplantable.toFixed(1)} acres</td><td></td><td></td><td>only ${G.plantablePct}% of vineyard ground gets planted</td></tr>`:'')+
+   (LD.siteAcres?`<tr><td>Winery site</td><td>${LD.siteAcres.toFixed(1)} acres</td><td></td><td></td><td>${n0(m.bld.sqft)} sq ft of building at ${G.siteCoverage}% site coverage (parking, crush pad apron, septic and wastewater, setbacks)${G.buildTier==='gravity'?', half again more for a hillside':''}</td></tr>`:'')+
+   (LD.spare>0.05?`<tr><td>Spare land</td><td>${LD.spare.toFixed(1)} acres</td><td></td><td></td><td>bought only because of the ${G.minParcel}-acre zoning minimum; it holds value and counts in the ending value, but earns nothing here</td></tr>`:'')+
+   `<tr><td>Price basis</td><td></td><td></td><td></td><td>${G.fruit==='estate'&&G.water!=='buyRight'?'irrigated farmland, since the vineyard uses water that comes with the land':'dry, ranch or scrub land, since nothing here needs the land\'s own water right'+(G.fruit==='estate'?`; clearing it for planting adds ${money(G.rawPrepAcre)}/acre`:'')}</td></tr>`}
+  const Wt=m.W;if(Wt.lines.length){eq+=hdr(`Water: ${money(Wt.wellCap+Wt.rights+Wt.transfer+(G.fruit==='estate'?m.acres*G.dripAcre:0))} up front, ${money(Wt.annual)} a year`)+Wt.lines.map(l=>`<tr><td>${l.k}</td><td></td><td>${l.yr?money(l.yr)+'/yr':''}</td><td>${l.cap?money(l.cap):''}</td><td>${l.why}</td></tr>`).join('')}
+  const ex=m.rows[8]||m.rows[m.rows.length-1],exGal=ex.sold*2.378,exSh=G.tasting?G.shareTR:G.shareNoTR,dtc=(exSh[0]+exSh[1])/100,fedEx=Math.max(0,exGal*G.fedExcise-Math.min(exGal,30000)-Math.min(Math.max(exGal-30000,0),100000)*0.9),waEx=exGal*3.785*G.waTaxL*dtc*G.waShare/100;
+  eq+=hdr(`Excise tax, year 8: ${money(ex.fixed.excise)}`)+`<tr><td>Federal</td><td>${n0(exGal)} gal removed</td><td>$${G.fedExcise.toFixed(2)}/gal less $1.00 credit</td><td>${money(fedEx)}</td><td>the small-producer credit covers almost all of it on the first 30,000 gallons a year</td></tr><tr><td>Washington</td><td>${Math.round(dtc*G.waShare)}% of gallons</td><td>$${G.waTaxL}/liter</td><td>${money(waEx)}</td><td>on tasting room and club sales to Washington residents; distributors pay it on wholesale. Reds over 14% need an affidavit on file to stay at this rate</td></tr>`;
+  eq+=hdr('Storage and property tax, year 8')+`<tr><td>Bottled wine storage</td><td>${n0(m.peakBottled)} peak cases</td><td>${G.storage==='onsite'?'on site':'off-site bonded'}</td><td>${G.storage==='onsite'?'':money(r8.storage)+'/yr'}</td><td>${G.storage==='onsite'?'adds the case storage room above, its property tax, insurance and upkeep':'monthly per-case fee, handling in and out, and bond admin'}</td></tr><tr><td>Property tax</td><td></td><td></td><td>${money(r8.propTax)}/yr</td><td>on land, building and equipment. Wine inventory itself is exempt in Washington, so the tax difference between the two storage choices is the building, not the wine</td></tr>`;
+  if(own&&m.lbr){const W=m.lbr,mk=s=>W.tasks.filter(t=>t.season===s).map(t=>`<tr><td>${t.k}</td><td>${n0(t.hrs)} hrs</td><td></td><td></td><td>${t.why}</td></tr>`).join('');
+    eq+=hdr(`Labor: ${n0(W.harvestHrs+W.yearHrs)} hours a year, ${money(W.total)} plus the winemaker`)+
+     `<tr><td><i>Harvest, ${W.harvestWeeks.toFixed(1)} weeks</i></td><td>${n0(W.harvestHrs)} hrs</td><td>${n0(W.peakWeek)} hrs/week</td><td></td><td>average week; the busiest weeks run well above it</td></tr>`+mk('harvest')+
+     `<tr><td><i>Rest of the year</i></td><td>${n0(W.yearHrs)} hrs</td><td></td><td></td><td></td></tr>`+mk('year')+
+     `<tr><td><b>Who does it</b></td><td></td><td></td><td></td><td></td></tr>`+
+     `<tr><td>${G.owner==='hire'?'Hired winemaker':'Owner as winemaker'}</td><td>${n0(W.wmH+W.wmY)} hrs</td><td></td><td>in salary</td><td>${G.wmHarvestHrs} hours a week hands-on at harvest, ${G.wmCellarHrs} the rest of the year</td></tr>`+
+     `<tr><td>Full-time cellar staff</td><td>${W.perms}</td><td>$${G.cellarWage}/hr</td><td>${money(W.cost.perm+W.cost.ot)}</td><td>${W.perms?`hired once off-season work passes about 60% of a full-time job; ${n0(W.otHrs)} overtime hours at harvest`:'off-season work does not justify a full-time hire'}</td></tr>`+
+     (W.partHrs>0?`<tr><td>Part-time cellar help</td><td>${n0(W.partHrs)} hrs</td><td>$${G.cellarWage}/hr</td><td>${money(W.cost.part)}</td><td>off-season hours left over</td></tr>`:'')+
+     `<tr><td>Seasonal harvest workers</td><td>${W.seasonalHeads}</td><td>$${G.seasonalWage}/hr</td><td>${money(W.cost.seasonal)}</td><td>${n0(W.seasonalHrs)} harvest hours the winemaker and full-time staff can't cover</td></tr>`;}
+  if(!own)eq='<tr><td colspan="5">No winery to build. The custom crush fee covers tanks, press, cellar work and most routine analysis.</td></tr>'+eq;
+  const bbl=V.map((v,i)=>[v,i]).filter(([v])=>v.barrel>0).map(([v,i])=>{const per=v.cases*2.4/59.4,stock=m.FL.bPeak[i]*G.barrelSpare;return `<tr><td>Barrels, ${v.name}</td><td>${Math.ceil(stock)}</td><td>${v.newOak}% new</td><td>${money(stock*(v.newOak/100*G.barrelNew+(1-v.newOak/100)*G.barrelUsed))}</td><td>${Math.ceil(per)} per vintage, ${v.barrel} months, peak ${Math.round(m.FL.bPeak[i])} in use at once from the cellar flow, then about ${Math.ceil(per*Math.max(v.newOak/100,0.2))} bought each year</td></tr>`}).join('');
+  const cap=Object.entries(lines).map(([k,v])=>`<tr><td>${k}</td><td></td><td></td><td>${money(v)}</td><td></td></tr>`).join('');
+  $('equip').innerHTML=`<thead><tr><th>Item</th><th>Qty</th><th>Size</th><th>Cost</th><th>Why</th></tr></thead><tbody>${eq}${bbl?hdr('Barrels')+bbl:''}${hdr('Capital by category')}${cap}</tbody>`;
+}
+function syncControls(){
+  for(const k in fmt){$('i_'+k).value=G[k];$('o_'+k).textContent=fmt[k](+G[k])}
+  document.querySelectorAll('[data-d]').forEach(b=>b.classList.toggle('on',String(G[b.dataset.d])===b.dataset.v));
+  $('fc').classList.toggle('on',finView==='cash');$('fl').classList.toggle('on',finView==='loan');
+  ['vineDevAcre','farmAcre','dripAcre','afPerAcre','districtAcre','waterRightAF','rawPrepAcre','plantablePct','rightTransfer','irrWellDepth','irrWellFt','liftFt','kwh'].forEach(k=>$('c_'+k).style.opacity=G.fruit==='estate'?1:.45);
+  ['suppliesCase','cellarWage','seasonalWage','seasonalBurden','bottlePerDay','crushCrew','capHrs','generalHrs','permHarvestHrs','sfPerKgal','sfPerBarrel','sfPerCaseStored','permitPct','jacketGal','storageGal','hoseFt','designFactor','lotTons','testsPerLot','labWage'].forEach(k=>$('c_'+k).style.opacity=G.facility==='build'?1:.45);
+  ['offsiteCaseMonth','offsiteInOut','offsiteAdmin'].forEach(k=>$('c_'+k).style.opacity=G.storage==='offsite'||G.facility==='custom'?1:.45);
+  document.querySelectorAll('[data-d]').forEach(b=>{if(buildOnly.includes(b.dataset.d))b.disabled=G.facility!=='build';if(b.dataset.d==='water')b.disabled=G.fruit!=='estate'});
+  $('c_customCase').style.opacity=G.facility==='custom'?1:.45;
+}
+function run(skipWines){
+  M=model(V,G,simulate);
+  const c=M.fin.cash,l=M.fin.loan;
+  $('headline').textContent=c.payback==null?`On these numbers the owner's cash isn't back within 20 years`:`${money(c.equityTot)} in, owner's cash back in year ${c.payback}`;
+  $('cardCash').innerHTML=card(c,'All cash');
+  $('cardLoan').innerHTML=l.loanAmt?card(l,'With a loan'):`<h3>With a loan</h3><div class="sub">Nothing to borrow against: no land, building or equipment in this setup.</div>`;
+  if(!skipWines)renderWines();else renderWines();
+  syncControls();implied();years();drawJ();drawY();FL=null;renderFlow();
+  try{localStorage.setItem('feasV10',JSON.stringify({V,G}))}catch(e){}
+}
+document.addEventListener('click',e=>{
+  const d=e.target.closest('[data-d]');if(d){const k=d.dataset.d,v=d.dataset.v;G[k]=v==='true'?true:v==='false'?false:v;run();return}
+  const tb=e.target.closest('[data-tab]');if(tb){tab=tb.dataset.tab;setTab();return}
+  const un=e.target.closest('[data-unit]');if(un){unit=un.dataset.unit;setTab();return}
+  const rg=e.target.closest('[data-rng]');if(rg){rng=rg.dataset.rng;const[a,b]=rangeOf();if(cur<a||cur>b)cur=a+Math.round((b-a)*0.3);setTab();return}
+  const f=e.target.closest('[data-fin]');if(f){finView=f.dataset.fin;syncControls();years();return}
+  if(e.target.id==='reset'){V=deepCopy(VDEF);G=deepCopy(GDEF);run()}
+});
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('srcTable').innerHTML='<thead><tr><th>Assumption</th><th>Default</th><th>Basis</th><th>Confidence</th><th>Source</th></tr></thead><tbody>'+SOURCES.map(([a,v,b,c,u])=>`<tr><td>${esc(a)}</td><td>${esc(v)}</td><td>${esc(b)}</td><td><span class="conf ${c}">${c}</span></td><td>${u?`<a href="${esc(u)}">${esc(new URL(u).hostname.replace('www.',''))}</a>`:''}</td></tr>`).join('')+'</tbody>';
+function setTab(){
+  $('flowView').hidden=tab!=='flow';$('moneyView').hidden=tab!=='money';
+  $('tbMoney').classList.toggle('on',tab==='money');$('tbFlow').classList.toggle('on',tab==='flow');
+  $('tbMoney').setAttribute('aria-selected',tab==='money');$('tbFlow').setAttribute('aria-selected',tab==='flow');
+  document.querySelectorAll('[data-rng]').forEach(b=>b.classList.toggle('on',b.dataset.rng===rng));document.querySelectorAll('[data-unit]').forEach(b=>b.classList.toggle('on',b.dataset.unit===unit));
+  if(tab==='flow'){if(!FL)renderFlow();else drawFlow()}else{drawJ()}
+}
+// moving the date only slides the cursor lines and refreshes the panel; the charts are redrawn only when the data or range changes
+let curRAF=0;
+function moveCursor(){if(curRAF)return;curRAF=requestAnimationFrame(()=>{curRAF=0;const[d0,d1]=rangeOf(),f=(cur-d0)/(d1-d0);
+  document.querySelectorAll('#flowView line.cur').forEach(l=>{const x=+l.dataset.x0+f*(+l.dataset.x1-l.dataset.x0);l.setAttribute('x1',x);l.setAttribute('x2',x)});
+  $('scrub').value=cur;snap()})}
+$('scrub').addEventListener('input',e=>{cur=+e.target.value;moveCursor()});
+['sF','sG','sL','sE'].forEach(id=>$(id).addEventListener('pointermove',e=>{if(!FL)return;const r=$(id).getBoundingClientRect(),[d0,d1]=rangeOf(),l={sF:8,sG:150,sL:40,sE:8}[id],rr=12;const f=(e.clientX-r.left-l)/(r.width-l-rr);if(f<0||f>1)return;cur=Math.round(d0+f*(d1-d0));moveCursor()}));
+const ro=new ResizeObserver(()=>{drawJ();drawY();if(tab==='flow')drawFlow()});ro.observe($('sJ'));ro.observe($('sY'));ro.observe($('sF'));ro.observe($('sL'));
+try{const s=JSON.parse(localStorage.getItem('feasV10'));if(s&&Array.isArray(s.V)&&s.G){V=s.V;G={...G,...s.G}}}catch(e){}
+run();setTab();
+}
+</script>
+</body>
+</html>

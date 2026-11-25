@@ -1,0 +1,37 @@
+{
+ "base": {
+  "equityCash": 5670715,
+  "paybackCash": 11,
+  "irrCash": 9.75,
+  "capex": 3684010,
+  "labor": 49208
+ },
+ "estate": {
+  "equityCash": 6760129,
+  "paybackCash": 12,
+  "irrCash": 8.46,
+  "capex": 4651037,
+  "labor": 49208
+ },
+ "custom": {
+  "equityCash": 2519681,
+  "paybackCash": 8,
+  "irrCash": 20.87,
+  "capex": 100000,
+  "labor": 0
+ },
+ "gravity": {
+  "equityCash": 8261605,
+  "paybackCash": 15,
+  "irrCash": 5.94,
+  "capex": 6012971,
+  "labor": 49208
+ },
+ "hire": {
+  "equityCash": 5770715,
+  "paybackCash": 13,
+  "irrCash": 7.36,
+  "capex": 3684010,
+  "labor": 49208
+ }
+}

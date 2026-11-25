@@ -1,0 +1,12 @@
+{
+  "name": "winery-feasibility",
+  "private": true,
+  "description": "20-year winery feasibility model with a cellar flow, labor and equipment calendar, built on a fermentation kinetics engine.",
+  "scripts": {
+    "build": "python3 build.py",
+    "test": "python3 build.py && node --test test/*.test.js"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
+  }
+}

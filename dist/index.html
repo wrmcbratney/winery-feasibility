@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Winery Feasibility, 20 Years</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a sober feasibility study for someone who reads pro formas for a living; wine colours, ledger discipline
+   IDEA: the owner's ledger: one J-curve of the owner's money in and out over twenty years, cash versus loan
+   PICTURE: the cumulative owner cash chart, both financing paths, large and first
+   COLOUR and TYPE: paper white and ink; wine red for the all-cash path, steel blue for the loan path, oak for inventory; Archivo wide + Source Sans 3
+   LAYOUT: verdict and chart, decisions and wines, the winery it implies, year by year, assumptions folded away */
+:root{color-scheme:light dark;--bg:light-dark(#fbfaf8,#140c0f);--panel:light-dark(#f1ece8,#22161a);--ink:light-dark(#1b1416,#f3ebe7);--mute:light-dark(#6d6064,#b3a3a7);--rule:light-dark(#ded5d0,#3a2a30);--wine:light-dark(#7a1631,#e0637f);--loan:light-dark(#1f6f8b,#62b6d4);--oak:light-dark(#8a5a2b,#d3a06c);--good:light-dark(#2f6b3a,#7fcf8c);--bad:light-dark(#c2410c,#ff8a4c)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Source Sans 3",system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(18px,3vw,40px) max(5vw,16px);max-width:1240px;margin:0 auto}
+h1,h2,h3,.big,legend,summary{font-family:Archivo,system-ui,sans-serif;font-stretch:112%}
+h1{font-size:clamp(28px,4vw,44px);line-height:1.05;margin:0 0 8px;font-weight:800;text-wrap:balance}
+h2{font-size:clamp(20px,2.4vw,26px);line-height:1.1;margin:0 0 10px;font-weight:800}
+h3{font-size:17px;margin:0 0 6px}
+.lede{color:var(--mute);max-width:72ch;margin:0}
+.verdict{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr) minmax(0,1fr);gap:20px;margin-top:20px;align-items:start}
+.card{border-top:4px solid var(--c);padding-top:10px}
+.card .row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--rule);font-size:15px}
+.card .row span:last-child{font-weight:600;white-space:nowrap;text-align:right}
+.card .big{font-size:clamp(26px,3vw,36px);font-weight:800;line-height:1.1}
+.card .sub{font-size:14px;color:var(--mute);margin-bottom:6px}
+.fig{position:relative;min-height:340px;background:var(--panel);border-radius:6px}
+.fig.mid{min-height:260px;margin-top:12px}
+.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;color:var(--mute);margin-top:8px}
+.legend i{display:inline-block;width:16px;height:4px;vertical-align:middle;margin-right:6px;border-radius:2px}
+.decisions{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 20px;margin-top:6px}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.seg button{flex:1 1 auto}
+button{font:600 15px "Source Sans 3",sans-serif;min-height:44px;padding:8px 12px;border-radius:6px;border:1px solid var(--rule);background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--ink)}button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--loan);outline-offset:2px}
+button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.dlab{font-size:14px;color:var(--mute)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{padding:8px 8px;border-bottom:1px solid var(--rule);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:600;color:var(--mute);font-size:14px}
+td input{width:84px;font:16px "Source Sans 3",sans-serif;padding:6px 8px;border:1px solid var(--rule);border-radius:4px;background:var(--bg);color:var(--ink);text-align:right}
+td select{font:16px "Source Sans 3",sans-serif;padding:6px;border:1px solid var(--rule);border-radius:4px;background:var(--bg);color:var(--ink)}
+.scroll{overflow-x:auto}
+.equip td:last-child{white-space:normal;text-align:left;color:var(--mute);font-size:14px;min-width:260px}
+.neg{color:var(--bad)}.pos{color:var(--good)}
+details{border-top:1px solid var(--rule);margin-top:18px}
+summary{cursor:pointer;font-weight:700;font-size:18px;padding:14px 0;min-height:44px}
+.groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}
+fieldset{border:0;border-top:1px solid var(--rule);margin:0;padding:12px 0 0}
+legend{font-weight:700;font-size:16px;padding:0}
+.ctl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;margin:10px 0}
+.ctl label{font-size:15px}.ctl output{font-weight:600;white-space:nowrap;text-align:right}
+.ctl input{grid-column:1/-1;width:100%;height:30px;accent-color:var(--wine)}
+.notes{columns:2 320px;column-gap:32px}.notes p{margin:0 0 12px;break-inside:avoid}
+.foot{font-size:14px;color:var(--mute)}
+.src td{white-space:normal;text-align:left;vertical-align:top}.src td:nth-child(2){white-space:nowrap;font-weight:600}.src td:nth-child(3){min-width:300px;color:var(--mute);font-size:14px}
+.conf{display:inline-block;font-size:13px;font-weight:600;padding:1px 8px;border-radius:10px}.conf.High{background:var(--good);color:var(--bg)}.conf.Medium{background:var(--oak);color:var(--bg)}.conf.Low{background:var(--bad);color:var(--bg)}
+.tabs{display:flex;gap:6px;margin-top:18px;border-bottom:1px solid var(--rule)}.tabs button{border-radius:6px 6px 0 0;border-bottom:0;min-width:140px}
+.flowgrid{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:20px;margin-top:14px;align-items:start}
+.fig.lanes{min-height:500px}.fig.gantt{min-height:200px;margin-top:12px}
+.snap{height:560px;overflow-y:auto;overscroll-behavior:contain;padding-right:6px;scrollbar-gutter:stable}
+.snap h3{margin:0 0 4px}.snap .row{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:4px 8px;padding:7px 0;border-bottom:1px solid var(--rule);font-size:15px;align-items:baseline}
+.snap .row i{width:12px;height:12px;border-radius:2px;display:block;align-self:center}.snap .row b{white-space:nowrap}.snap .row small{grid-column:2/-1;color:var(--mute);font-size:13px}
+.snap .row.over b{color:var(--bad)}
+#scrub{width:100%;accent-color:var(--wine);height:30px;margin-top:6px}
+@media(max-width:900px){.flowgrid{grid-template-columns:minmax(0,1fr)}.snap{height:420px}}
+.pill{display:inline-block;font-size:13px;padding:1px 8px;border-radius:10px;background:var(--panel);color:var(--mute)}
+@media(max-width:900px){.verdict{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.verdict>.chart{grid-column:1/-1}}
+@media(max-width:560px){.verdict{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<div class="band">
+  <h1 id="headline">Winery feasibility, 20 years</h1>
+  <p class="lede">From land and engineering through planting, building, every vintage moving from grape to sold case, and the owner's money in and out. A thought exercise. Defaults come from published 2024 to 2026 data where it exists, with each source and its confidence listed below; every assumption is adjustable. Taxes and risk are not modeled yet.</p>
+  <div class="tabs" role="tablist"><button role="tab" data-tab="money" id="tbMoney">Money</button><button role="tab" data-tab="flow" id="tbFlow">Cellar flow</button></div>
+  <div id="flowView" hidden>
+    <div style="display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;margin-top:14px">
+      <div class="seg" style="max-width:560px;flex:1 1 360px"><button data-rng="harvest">Harvest, Aug to Dec</button><button data-rng="year">A full year</button><button data-rng="vintage">One vintage, pick to sold</button></div>
+      <div class="seg" style="max-width:260px;flex:0 1 240px"><button data-unit="gal">Gallons</button><button data-unit="ves">Vessels</button></div>
+    </div>
+    <p class="lede" id="flowLede" style="margin-top:6px"></p>
+    <div class="flowgrid">
+      <div>
+        <div class="fig lanes"><svg id="sF" role="img" aria-label="Gallons by cellar location over time, with capacity lines"></svg></div>
+        <input type="range" id="scrub" min="0" max="364" step="1" aria-label="Date">
+        <div class="legend"><span><i style="background:var(--ink);height:2px"></i>Installed capacity (dashed)</span><span><i style="background:var(--bad)"></i>Over capacity</span><span id="flowNote"></span></div>
+      </div>
+      <div class="snap" id="snap"></div>
+    </div>
+    <div id="workBlock">
+    <h3 style="margin-top:22px">Cellar labor, hours per day</h3>
+    <p class="dlab" id="laborLede" style="margin:2px 0 8px"></p>
+    <div class="fig" style="min-height:260px"><svg id="sL" role="img" aria-label="Cellar labor hours per day by task, with the crew available"></svg></div>
+    <div class="legend" id="laborLegend"></div>
+    <h3 style="margin-top:22px">Equipment time, hours per day</h3>
+    <p class="dlab" style="margin:2px 0 8px">Dashed line is one 10-hour shift for every unit installed. Anything above it is a night shift, a second unit, or wine waiting.</p>
+    <div class="fig" style="min-height:440px"><svg id="sE" role="img" aria-label="Hours of use per day for each piece of cellar equipment"></svg></div>
+    </div>
+    <h3 style="margin-top:22px" id="ganttHead">Where each lot of this vintage is</h3>
+    <div class="fig gantt"><svg id="sG" role="img" aria-label="Timeline of each lot through crush pad, tanks, barrels and bottle"></svg></div>
+  </div>
+  <div class="verdict" id="moneyView">
+    <div class="chart">
+      <div class="fig"><svg id="sJ" role="img" aria-label="Cumulative owner cash by year, all cash versus loan"></svg></div>
+      <div class="legend"><span><i style="background:var(--wine)"></i>All cash</span><span><i style="background:var(--loan)"></i>With a loan</span><span><i style="background:var(--mute);height:2px"></i>Break-even line</span><span>Owner cash in and out, cumulative, before the business's ending value</span></div>
+    </div>
+    <div class="card" style="--c:var(--wine)" id="cardCash"></div>
+    <div class="card" style="--c:var(--loan)" id="cardLoan"></div>
+  </div>
+</div>
+
+<div class="band" style="padding-top:0">
+  <h2>The big decisions</h2>
+  <div class="decisions" id="decisions"></div>
+</div>
+
+<div class="band" style="padding-top:0">
+  <h2>What you make</h2>
+  <p class="lede">Target cases a year for each wine. Fruit, tanks, barrels, bottling and the sales ramp all follow from this table.</p>
+  <div class="scroll" style="margin-top:10px"><table id="wines"></table></div>
+  <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select id="addVar" aria-label="Variety to add"></select><button id="addWine">Add a wine</button><span class="dlab">Picking a variety fills in its grape price, yield, ripeness, oak and release; edit any of them after.</span></div>
+</div>
+
+<div class="band" style="padding-top:0">
+  <h2>The winery it implies</h2>
+  <p class="lede" id="impliesLede"></p>
+  <div class="scroll" style="margin-top:10px"><table class="equip" id="equip"></table></div>
+</div>
+
+<div class="band" style="padding-top:0">
+  <h2>Year by year</h2>
+  <div class="seg" style="max-width:420px"><button data-fin="cash" id="fc">All cash</button><button data-fin="loan" id="fl">With a loan</button></div>
+  <div class="fig mid"><svg id="sY" role="img" aria-label="Revenue and costs by year, with cases in inventory"></svg></div>
+  <div class="legend"><span><i style="background:var(--good)"></i>Revenue</span><span><i style="background:var(--wine)"></i>Production spending</span><span><i style="background:var(--mute)"></i>Operating costs</span><span><i style="background:var(--bad)"></i>Capital spending</span><span><i style="background:var(--oak);height:2px"></i>Cases in inventory (right axis)</span></div>
+  <div class="scroll" style="margin-top:14px"><table id="years"></table></div>
+</div>
+
+<div class="band" style="padding-top:0">
+  <h2>Where the numbers come from</h2>
+  <p class="lede">Each default with its basis and how much to trust it. Prices are Washington-based except Pinot Noir, which assumes Oregon fruit. High means a current published figure; low means a rough range or a placeholder that needs a real quote.</p>
+  <div class="scroll" style="margin-top:10px"><table class="src" id="srcTable"></table></div>
+</div>
+
+<div class="band" style="padding-top:0">
+  <details id="settings"><summary>Assumptions</summary><div class="groups" id="groups"></div></details>
+</div>
+
+<div class="band">
+  <h2>How the model works</h2>
+  <div class="notes">
+    <p><b>Timeline.</b> Year 0 is land, site work, engineering and the build (or planting). The first harvest is year 1. Each vintage is released after its months-to-release, counted from a mid-October harvest, and bottled about three months before release. Sales follow a brand ramp from first release (35, 55, 75, 90, then 100% of target), oldest vintage first; unsold wine waits in inventory.</p>
+    <p><b>Building.</b> The winery is built up space by space: covered crush pad, fermentation hall sized to the tank count, barrel room sized to the barrel stock, case storage sized to the peak of bottled inventory (if kept on site), lab, tasting room, and about 12% for offices, restrooms and mechanical. Each style has its own cost per square foot for each space and its own design and engineering fee, which climbs from about 8% of construction for a metal building to 18% for a gravity-flow hillside design, plus a site work share that jumps when you cut into a slope. Gravity flow removes the must pump and most hose runs but costs far more in concrete and excavation. Buildings depreciate over 30 years.</p>
+    <p><b>Storage and tax.</b> Washington exempts business inventory, including bottled wine, from property tax, so storing on site costs the extra building, plus property tax, insurance and upkeep on that building. Off-site bonded storage swaps that for per-case monthly fees, handling, and an admin fee for bonded tax reporting. Federal excise tax is due when wine leaves bond either way, so it is not part of this choice and is not modeled yet.</p>
+    <p><b>Lab.</b> Analyses scale with lot count (tons per lot sets how many lots) times analyses per lot per year. Sending everything out costs the outside price per analysis. A basic in-house lab moves about 60% of routine work (pH, TA, SO2, Brix, VA) in-house at reagent cost plus lab time; a full lab with an enzymatic analyzer moves about 90%. Both still send out the rest.</p>
+    <p><b>Equipment sizing.</b> Tanks and barrels come from the cellar flow: for each vessel type, the most vessels in use on any day of a normal year, plus a design margin for "not quite worst case." Ferment and white tanks hold one lot each; lot tanks can combine lots of the same wine after press. Each tank type is the smallest standard size that holds its largest load, priced on a size curve (bigger tanks cost less per gallon), and blending tanks hold a whole wine. Barrels are the peak in use plus spares, which also sets the first year's barrel purchase. Press and chiller follow from tonnage. Pumps, hoses and fittings follow from the tank count; pumpover pumps are one per four red tanks. Barrels follow months in barrel and new-oak share; year one buys the whole working stock.</p>
+    <p><b>Costs.</b> Each vintage carries its fruit, estate farming, cellar labor and supplies (or custom crush fees), barrels and dry goods; that cost per case becomes cost of goods when it sells. Salaries, tasting room, utilities, insurance, maintenance, marketing and card fees are period costs. Depreciation: building 30 years, equipment 10 (half replaced in year 10), vineyard 25.</p>
+    <p><b>Financing and the owner.</b> The loan covers a share of years 0 to 2 capital spending, amortized monthly-equivalent over its term. In both cases the owner injects equity whenever cash would drop below the reserve, and takes distributions once operations are cash-positive and cash exceeds twice the reserve. If the owner is the winemaker, the owner's salary counts as payout and as a cost; if a winemaker is hired, the owner is an investor only. The 20-year IRR includes an ending value: land at its growth rate, undepreciated assets, inventory at cost and cash, less debt.</p>
+    <p><b>Land.</b> Vineyard acres follow from production: tons needed for each wine divided by its tons per acre. Only part of the vineyard ground can be planted (roads, headlands and turn rows, setbacks, rock and steep ground), so planted acres are grossed up by the plantable share. The winery site is sized from the building at a site-coverage ratio. The total is rounded up to the zoning minimum parcel, since rural agricultural zones in eastern Washington commonly set 20- or 40-acre minimums; any extra is spare land that holds value but earns nothing. Irrigated farmland is priced only when the vineyard waters from the land's own right; a winery on bought fruit, or a vineyard using a purchased right, buys cheaper dry ground, and raw ground pays to be cleared before planting.</p>
+    <p><b>Water.</b> A winery's process water usually fits under Washington's permit-exempt well rules (up to 5,000 gallons a day for industrial use), so the winery gets its own well; the busiest harvest day is checked against that limit. A vineyard of any real size needs a water right. Three ways in: land inside an irrigation district (the right comes with the land; you pay an annual assessment), land with an existing groundwater right and well (you pay to pump), or cheaper dry land plus a water right bought from someone else, a new well, and an Ecology change application whose timing and approval aren't guaranteed. A bought water right is carried like land: it doesn't depreciate and it counts in the ending value.</p>
+    <p><b>Excise.</b> Federal tax is $1.07 a gallon on still wine up to 16%, less the small-producer credit of $1.00 a gallon on the first 30,000 gallons removed from bond each year, so a winery this size pays about 7 cents a gallon. Washington's wine tax of $0.2292 a liter applies to wine the winery sells to Washington consumers; wine sold to distributors is taxed when they buy it. Washington taxes wine over 14% at the higher fortified rate unless it got there by natural fermentation and an affidavit is on file, so the model assumes the affidavit. Other states' taxes on out-of-state club shipments are not modeled.</p>
+    <p><b>Bottling.</b> Bottling is the winemaker's call, set per wine in the table as months after harvest. The default is about a month after barrel time ends (reds reach barrel in spring, around month 6), with release at least two months after bottling. If bottling comes before the barrel time is up, the barrel time is cut short and the flow tab says so. Moving bottling changes when blending tanks, barrels and case storage free up, and which year the dry goods are bought.</p>
+    <p><b>Empty barrels.</b> Barrels sit empty between the old vintage coming out and the new one going in after ML. The model counts empty barrel-days from the flow and adds sulfuring every six weeks to the labor, and the equipment list carries a barrel washing station, a hot-water pressure washer to drive it, a sulfur kit and, if chosen, an ozone generator. Racks cover every installed barrel, full or empty.</p>
+    <p><b>Cellar flow.</b> Each wine is split into lots of the chosen size, picked one every two days from the variety's typical Washington start date. Reds run through the lot simulator for their own pick date: days in the ferment tank, press, then ML in a storage tank until the cellar warms in spring, then barrel for the months set, back to tank before bottling. Whites settle two days, ferment in tank or go to barrel, then wait in tank for bottling. Bottled wine waits for release and sells evenly over the following year. Several identical vintages are laid on top of each other, so a normal year shows older wine still in barrel and bottle while the new one comes in. Tank lines count tank space including headspace during fermentation.</p>
+    <p><b>Daily labor and equipment.</b> The flow calendar also drives the work. Each lot adds its pick-day crew and sorting, press loads, twice-daily pumpovers while in tank, ferment checks, a transfer and tank cleaning at every move, barrel filling, monthly topping, a mid-term racking and washing on the way out, and bottling days on a mobile line; sold cases add shipping work. Harvest is any day a ferment is running. The crew is sized from these days: full-time staff from the off-season workload, seasonal workers from the busiest harvest week, so the dashed line shows where long days and catch-up fall. Equipment hours come from the same events, against one 10-hour shift per unit.</p>
+    <p><b>Labor.</b> Cellar labor is built from tasks. Harvest work scales with pick days (one per lot), tons sorted, press loads, red ferment days (from the lot simulator: cold soak, ferment and any extended maceration) times pumpovers, and tank turnovers, plus daily rounds whether fruit arrives or not. The rest of the year scales with barrels, storage tanks and cases. The winemaker covers a set number of hands-on hours. A full-time cellar worker is hired once the leftover off-season work reaches about 60% of a full-time job; that person works long harvest weeks with overtime past 40 hours, and seasonal workers fill whatever harvest hours remain. Labor is a production cost, so it rides in each vintage's cost per case. Salaried winemaker, admin and tasting room staff stay separate.</p>
+    <p><b>Not yet.</b> Production growing over time, income taxes, winery wastewater, risk (bad vintages, missed ramps), price inflation, and the quality value of a hired winemaker, which is why hiring currently looks like pure cost.</p>
+  </div>
+  <p class="foot">Skeleton v2. Defaults sourced where possible; see the confidence column.</p>
+</div>
+
+<script>
+{
+const YEAST={robust:{Yxn:0.022,kT:0.06,heat:30,f0:1},lowN:{Yxn:0.032,kT:0.06,heat:30,f0:1},cool:{Yxn:0.022,kT:0.045,heat:27,f0:1.12}};
+function cellarF(p,day){ // day = days from Jan 1, unheated cellar follows a seasonal cosine, coldest ~Jan 20
+  const mid=(p.winterF+p.summerF)/2, amp=(p.summerF-p.winterF)/2;
+  return mid-amp*Math.cos(2*Math.PI*(day-20)/365);
+}
+function simulate(p){
+  const Y=YEAST[p.yeast]||YEAST.robust;
+  const dt=1/48,cp=3.8,JUICE=0.8,HEAT=0.6,F2C=f=>(f-32)*5/9,C2F=c=>c*9/5+32;
+  const isBin=p.vessel==='bin', M=(isBin?0.9:p.tons)*907;
+  const UA=isBin?0.06:0.012*Math.pow(p.tons,2/3), cool=isBin?0:p.coolBTU/3412;
+  const Tset=F2C(p.setF),swing=p.swingF*5/9;
+  let S=p.brix*10,N=p.yan,X=0,E=0,inoc=p.soakDays,dapDone=false;
+  let T=p.soakDays>0?F2C(p.soakF):F2C(p.fruitF);
+  const out=[];let dry=null,peakT=-99,peakQ=0,peakCool=0,coolKWh=0;
+  // LAB for co-inoculation
+  const LABK=3e7; let lab=0, mal=p.malic;
+  for(let i=0;;i++){
+    const t=i*dt; if(t>p.soakDays+45)break;
+    const Tamb=F2C(p.ambF)+swing/2*Math.sin(2*Math.PI*(t-0.375));
+    let dS=0;
+    if(t>=inoc){
+      if(X===0)X=0.2;
+      if(!dapDone&&p.dapDay>=0&&t>=inoc+p.dapDay){N+=p.dapAmt;dapDone=true}
+      const f=Y.f0*Math.exp(Y.kT*(T-25));
+      const a=Math.min(1,(t-inoc)/1.2), lagF=a*a*(3-2*a); // rehydration and acclimation
+      const mu=2.4*lagF*f*N/(25+N)*Math.max(0,1-E/60), dX=mu*X*dt;
+      N=Math.max(0,N-dX/Y.Yxn);
+      const kd=0.008+0.0002*E*Math.exp(0.3*(T-Y.heat+3));
+      X=Math.max(0,X+dX-kd*X*dt);
+      const Emax=150-4*Math.max(0,T-Y.heat);
+      const q=14*f*S/(3+S)*Math.max(0,1-E/Emax);
+      dS=Math.min(S,q*X*dt); S-=dS; E+=0.47*dS;
+      if(p.ml==='co'&&t>=inoc+1){ if(lab===0)lab=1e6; const r=labRate(C2F(T),E/7.89); lab+=r.g*lab*(1-lab/LABK)*dt*(S>20?0.4:1); mal=Math.max(0,mal-r.c*lab*mal/(0.2+mal)*dt); }
+    }
+    const Qgen=dS/dt*JUICE*M*HEAT/86400; let Qcool=0;
+    if(t>=inoc){
+      if(cool>0){const need=Qgen+M*cp*(T-Tset)/(0.25*86400);Qcool=Math.min(cool,Math.max(0,need))}
+      T+=(Qgen-Qcool-UA*(T-Tamb))*dt*86400/(M*cp);
+      peakT=Math.max(peakT,T);peakQ=Math.max(peakQ,Qgen);peakCool=Math.max(peakCool,Qcool);coolKWh+=Qcool*dt*24;
+    }
+    if(dry===null&&t>inoc&&S<2)dry=t;
+    if(i%4===0)out.push({t,s:S,b:S/10-0.0165*E,T:C2F(T),A:C2F(Tamb),Q:Qgen*3412,C:Qcool*3412,m:mal});
+    if(dry!==null&&t>dry+p.emDays+1)break;
+  }
+  const abv=E/7.89;
+  const r={out,dry,inoc,peakTF:C2F(peakT),peakQ:peakQ*3412,peakCool:peakCool*3412,cap:cool*3412,coolKWh,S,abv,brixEnd:S/10-0.0165*E,isBin};
+  const tons=p.tons;
+  const sortRate={none:1e9,hand:2.5,optical:6}[p.sort]||1e9;
+  const crushRate=Math.min(p.crushRate,sortRate), crushHrs=tons/crushRate+p.setupHrs;
+  const bins=Math.ceil(tons/p.binTons-1e-9);
+  const mustGal=tons*p.mustGal, tankGal=mustGal*(1+p.headspace/100);
+  Object.assign(r,{crushHrs,crushRate,bins,mustGal,tankGal});
+  if(dry===null)return r;
+  // ---- crush, drain and press, volumes ----
+  const loads=Math.ceil(tons/p.pressLoad-1e-9), pressHrs=loads*p.pressCycle;
+  const pressDay=dry+p.emDays, pressEnd=pressDay+pressHrs/24;
+  const freeGal=tons*p.freeRun, pressGal=tons*p.pressGal, gal=freeGal+pressGal, pomace=tons*0.17;
+  const barrelGal=gal*(1-p.leesPct/100);
+  const barrels=p.pressHandling==='separate'?Math.ceil(freeGal*(1-p.leesPct/100)/59.4-1e-9)+Math.ceil(pressGal*(1-p.leesPct/100)/59.4-1e-9):Math.ceil(barrelGal/59.4-1e-9);
+  // ---- malolactic, daily steps from press ----
+  const startDOY=p.harvestDOY+pressEnd;
+  let L=p.ml==='co'?lab:(p.ml==='seq'?1e6:1e3), m=mal;
+  const ml=[];let mlDone=m<0.1?pressEnd:null, barrelDay=null, unprot=dry? (pressEnd-dry):0, warmUnprot=0;
+  for(let d=0;d<300;d++){
+    const day=pressEnd+d, doy=startDOY+d;
+    const cel=cellarF(p,doy);
+    const inBarrel=barrelDay!==null;
+    let wT=cel;
+    if(!inBarrel&&p.mlHeat) wT=Math.max(cel,p.mlHeatF);
+    if(mlDone===null){
+      const rr=labRate(wT,abv);
+      L+=rr.g*L*(1-L/LABK); m=Math.max(0,m-rr.c*L*m/(0.2+m));
+      if(m<0.1)mlDone=day;
+      unprot+=1; if(wT>=60)warmUnprot+=1;
+    }
+    if(barrelDay===null){
+      if(p.barrelRule==='afterML'){ if(mlDone!==null&&day>=Math.max(mlDone,pressEnd)+p.settleDays)barrelDay=day; }
+      else if(doy>365+30&&cel>=p.barrelF)barrelDay=day;
+    }
+    if(barrelDay===null&&d>=299)barrelDay=day;
+    ml.push({t:day,m,w:wT,c:cel});
+    if(mlDone!==null&&barrelDay!==null&&day>Math.max(mlDone,barrelDay)+20)break;
+  }
+  Object.assign(r,{pressDay,pressEnd,pressHrs,loads,gal,barrels,ml,mlDone,barrelDay,unprot,warmUnprot,crushHrs,crushRate,bins,mustGal,tankGal,freeGal,pressGal,pomace,barrelGal});
+  return r;
+}
+function labRate(wF,abv){
+  const T=(wF-32)*5/9;
+  const tf=Math.exp(0.15*(T-20))/(1+Math.exp(-(T-13)/1.2));
+  const ef=Math.min(1,Math.max(0.3,1-(abv-13)/8));
+  return {g:0.45*tf*ef,c:0.17/3e7*tf*ef};
+}
+
+
+// 20-year winery feasibility engine. Annual steps, year 0 = land, engineering, build. First harvest in year 1.
+// Variety presets. Washington grape prices are the Wine Commission's 2022 average by variety scaled by the
+// all-variety rise to 2024 (+18%), except Cabernet (2025 actual), Merlot (2024 actual), Malbec (2024, derived) and Pinot Noir (Oregon 2025).
+// pick = first pick day of year (lots follow every 2 days); soak = cold soak days, setF = ferment temperature, ext = extended maceration days after dryness.
+const VARIETIES={
+ 'Cabernet Sauvignon':{pick:283,color:'red',grape:3170,tpa:3.5,cpt:60,brix:26,barrel:20,newOak:50,release:30,price:70,soak:3,setF:85,ext:7},
+ 'Merlot':{pick:268,color:'red',grape:2595,tpa:4,cpt:60,brix:25,barrel:18,newOak:35,release:28,price:50,soak:3,setF:84,ext:3},
+ 'Cabernet Franc':{pick:278,color:'red',grape:2450,tpa:3.5,cpt:60,brix:25,barrel:18,newOak:35,release:28,price:55,soak:3,setF:84,ext:3},
+ 'Petit Verdot':{pick:288,color:'red',grape:2270,tpa:3.5,cpt:58,brix:26,barrel:20,newOak:40,release:30,price:55,soak:3,setF:85,ext:5},
+ 'Malbec':{pick:272,color:'red',grape:1500,tpa:4,cpt:60,brix:25.5,barrel:16,newOak:30,release:26,price:45,soak:3,setF:85,ext:3},
+ 'Syrah':{pick:265,color:'red',grape:1580,tpa:4,cpt:60,brix:25.5,barrel:16,newOak:25,release:26,price:50,soak:2,setF:82,ext:0},
+ 'Grenache':{pick:276,color:'red',grape:1900,tpa:4.5,cpt:62,brix:25.5,barrel:10,newOak:0,release:18,price:40,soak:2,setF:80,ext:0},
+ 'Mourvedre':{pick:285,color:'red',grape:1810,tpa:4,cpt:60,brix:25,barrel:14,newOak:10,release:22,price:42,soak:2,setF:82,ext:0},
+ 'Sangiovese':{pick:275,color:'red',grape:1480,tpa:4.5,cpt:62,brix:24.5,barrel:12,newOak:10,release:20,price:38,soak:2,setF:84,ext:3},
+ 'Pinot Noir':{pick:262,color:'red',grape:2800,tpa:2.8,cpt:58,brix:24.5,barrel:11,newOak:25,release:18,price:50,soak:4,setF:82,ext:0},
+ 'Chardonnay':{pick:255,color:'white',grape:1200,tpa:4,cpt:62,brix:23.5,barrel:10,newOak:30,release:12,price:40},
+ 'Sauvignon Blanc':{pick:245,color:'white',grape:1170,tpa:5,cpt:65,brix:23,barrel:0,newOak:0,release:8,price:28},
+ 'Semillon':{pick:255,color:'white',grape:1630,tpa:4.5,cpt:65,brix:23,barrel:8,newOak:10,release:12,price:32},
+ 'Viognier':{pick:256,color:'white',grape:1360,tpa:4,cpt:62,brix:24,barrel:6,newOak:0,release:10,price:32},
+ 'Riesling':{pick:260,color:'white',grape:1030,tpa:5.5,cpt:68,brix:22,barrel:0,newOak:0,release:8,price:25},
+ 'Chenin Blanc':{pick:262,color:'white',grape:1220,tpa:5,cpt:65,brix:22.5,barrel:6,newOak:0,release:10,price:28},
+ 'Pinot Gris':{pick:250,color:'white',grape:1020,tpa:5,cpt:65,brix:22.5,barrel:0,newOak:0,release:8,price:25},
+ 'Gewurztraminer':{pick:255,color:'white',grape:860,tpa:5,cpt:65,brix:22.5,barrel:0,newOak:0,release:8,price:24}
+};
+// Bottling is the winemaker's call; the default is a month after barrel time ends (reds reach barrel in spring, about month 6).
+const defBottle=v=>v.barrel>0?Math.round((v.color==='red'?6:0.5)+v.barrel+1):5;
+for(const n in VARIETIES){const v=VARIETIES[n];v.bottle=defBottle(v);v.release=Math.max(v.release,v.bottle+2)}
+const bottleOf=v=>v.bottle??defBottle(v);
+const wine=(name,cases)=>({name,cases,...VARIETIES[name]});
+const VDEF=[wine('Sauvignon Blanc',800),wine('Chardonnay',800),wine('Pinot Noir',800),wine('Cabernet Sauvignon',1600)];
+const GDEF={
+ fruit:'buy', facility:'build', tasting:true, owner:'winemaker',
+ landAcre:15000, plantablePct:80, siteCoverage:12, minParcel:20, rawPrepAcre:1500, vineDevAcre:21500, farmAcre:6200, landGrowth:2.5,
+ water:'district', dripAcre:3500, afPerAcre:1.8, districtAcre:150, boosterAcre:30, dryLandAcre:4000, waterRightAF:3000, rightTransfer:20000,
+ irrWellDepth:500, irrWellFt:100, irrPump:40000, liftFt:400, kwh:0.09, wineryWellDepth:400, wineryWellFt:60, wineryWellKit:15000, waterRatio:4,
+ fedExcise:1.07, waTaxL:0.2292, waShare:85,
+ buildTier:'custom', storage:'onsite', lab:'outsource', sort:'hand', trSqft:2000, trFitout:250000, permitPct:1, sfPerKgal:35, sfPerBarrel:3, sfPerCaseStored:0.15,
+ jacketGal:9, storageGal:6, hoseFt:20, harvestWindow:28, designFactor:1.15, barrelSpare:1.05, lotsPerTank:2, ozone:true, chillerTon:1800,
+ barrelNew:1400, barrelUsed:400,
+ suppliesCase:8, customCase:45, capHrs:0.33, crushCrew:4, bottlePerDay:1200, shiftHrs:10, generalHrs:20, harvestWeeks:8, wmHarvestHrs:45, wmCellarHrs:15, permHarvestHrs:55, cellarWage:24, seasonalWage:20, seasonalBurden:15, tankLeaseCustom:0,
+ bottlePer:2.6, carton:2.5, bottling:3.5,
+ wmSalary:120000, burden:25, ownerSalary:100000, adminCost:60000, trStaff:190000, trLease:60000,
+ propTaxPct:1, offsiteCaseMonth:0.35, offsiteInOut:1, offsiteAdmin:3000, testsPerLot:15, testExt:40, lotTons:5, labWage:30,
+ utilBase:20000, utilCase:1.5, insurePct:0.5, maintPct:1.5, marketingPct:6, dtcFeePct:3,
+ shareTR:[42,28,30], shareNoTR:[10,15,75], clubDisc:15, wholesaleFactor:50,
+ ramp:[35,55,75,90,100],
+ loanLTV:70, loanRate:7.5, loanTerm:20, reserve:150000, distPct:75, discount:8, years:20
+};
+function deepCopy(o){return JSON.parse(JSON.stringify(o))}
+// red tank days from the lot simulator engine
+function tankDays(v,simulate){
+  if(!simulate) return 18;
+  const r=simulate({tons:5,brix:v.brix,yan:180,dapDay:-1,dapAmt:60,soakDays:v.soak??3,soakF:50,fruitF:65,setF:v.setF??85,coolBTU:6800,vessel:'tank',ambF:62,swingF:0,emDays:v.ext??0,yeast:'robust',
+   malic:2.5,ml:'seq',mlHeat:false,mlHeatF:68,winterF:52,summerF:68,barrelF:58,harvestDOY:274,pressLoad:5,pressCycle:3,
+   binTons:0.5,crushRate:8,setupHrs:1.5,sort:'hand',mustGal:180,headspace:20,freeRun:115,pressGal:45,leesPct:4,pressHandling:'blend',barrelRule:'spring',settleDays:10});
+  return r.pressEnd||30;
+}
+const simCache={};
+function redRun(v,simulate){const k=[v.brix,v.soak,v.setF,v.ext].join();if(!simCache[k])simCache[k]={days:tankDays(v,simulate)};return simCache[k]}
+
+// Building tiers: construction $/sq ft by space, design+engineering fee, site work share.
+const TIERS={
+ shell:{name:'Metal building',design:8,site:5,cost:{pad:60,ferm:175,barrel:190,storage:120,lab:250,tasting:350,support:200}},
+ custom:{name:'Custom production building',design:12,site:8,cost:{pad:90,ferm:275,barrel:300,storage:160,lab:350,tasting:500,support:300}},
+ gravity:{name:'Gravity-flow hillside',design:18,site:22,cost:{pad:140,ferm:450,barrel:550,storage:200,lab:450,tasting:800,support:450}}
+};
+const LAB={
+ outsource:{name:'All outside',equip:0,share:0,consum:0,hrs:0},
+ basic:{name:'Basic in-house',equip:9000,share:0.6,consum:3,hrs:0.25},
+ full:{name:'Full in-house',equip:45000,share:0.9,consum:6,hrs:0.15}
+};
+// Water: winery process water from a permit-exempt well (up to 5,000 gal/day industrial use under RCW 90.44.050),
+// vineyard irrigation from an irrigation district, an on-site well with a groundwater right that comes with the land,
+// or dry land plus a purchased water right and a new well.
+function waterPlan(V,G,own,estate,acres,sz,FL){
+  const L=[],add=(k,cap,yr,why,conf)=>L.push({k,cap,yr,why,conf});
+  let wellCap=0,rights=0,transfer=0,annual=0;
+  const wineGal=V.reduce((a,v)=>a+v.cases*2.378,0), procGal=wineGal*G.waterRatio;
+  // harvest peak: water for the busiest processing day, roughly the peak crush-pad day's juice volume times the ratio, spread over cleanup
+  let peakDay=0;if(FL)for(let d=0;d<365;d++)peakDay=Math.max(peakDay,(FL.lanes.pad[d]+FL.lanes.press[d])*G.waterRatio/2);
+  if(own){const c=G.wineryWellDepth*G.wineryWellFt+G.wineryWellKit;wellCap+=c;
+    add('Winery well (permit-exempt)',c,0,`${G.wineryWellDepth} ft at $${G.wineryWellFt}/ft plus pump, pressure tank and treatment. About ${Math.round(procGal).toLocaleString()} gal of process water a year at ${G.waterRatio} gal per gal of wine; busiest harvest day about ${Math.round(peakDay).toLocaleString()} gal${peakDay>5000?', over the 5,000 gal/day exempt limit, so plan storage or a water right':', inside the 5,000 gal/day exempt limit'}`,'Medium');}
+  if(estate&&acres>0){
+    const af=acres*G.afPerAcre;
+    if(G.water==='district'){annual+=acres*(G.districtAcre+G.boosterAcre);
+      add('Irrigation district assessment',0,acres*(G.districtAcre+G.boosterAcre),`$${G.districtAcre}/acre assessment plus about $${G.boosterAcre}/acre to pump drip pressure; the right comes with the land`,'Low');}
+    else{
+      const wc=G.irrWellDepth*G.irrWellFt+G.irrPump;wellCap+=wc;
+      add('Irrigation well and pump',wc,0,`${G.irrWellDepth} ft through basalt at $${G.irrWellFt}/ft plus a pump sized for drip`,'Low');
+      const kwhAF=(G.liftFt+100)*1.7, pw=af*kwhAF*G.kwh;annual+=pw+wc*0.01;
+      add('Pumping power and well upkeep',0,pw+wc*0.01,`${af.toFixed(1)} acre-feet a year lifted ${G.liftFt} ft plus drip pressure, about ${Math.round(kwhAF)} kWh per acre-foot at $${G.kwh}/kWh, plus 1% upkeep`,'Low');
+      if(G.water==='buyRight'){rights=af*G.waterRightAF;transfer=G.rightTransfer;
+        add('Water right purchase',rights,0,`${af.toFixed(1)} acre-feet a year at $${G.waterRightAF.toLocaleString()}/AF; holds value like land`,'Medium');
+        add('Water right transfer: Ecology change application, hydrogeology, legal',transfer,0,'placeholder; timing and approval are not guaranteed','Low');}
+    }
+    add('Drip irrigation and filtration',acres*G.dripAcre,0,`$${G.dripAcre.toLocaleString()}/acre, installed with the vineyard`,'Medium');
+  }
+  return {lines:L,wellCap,rights,transfer,annual,procGal,peakDay,af:estate?acres*G.afPerAcre:0};
+}
+// Excise: federal $1.07/gal on still wine up to 16% ABV, less the CBMA credit ($1.00 on the first 30,000 gal removed in a year,
+// $0.90 on the next 100,000, $0.535 on the next 620,000). Washington $0.2292/L on wine the winery sells to Washington consumers;
+// wine sold to distributors is taxed when the distributor buys it.
+function exciseTax(s,G,shares){
+  const gal=s.sold*2.378;if(!gal)return 0;
+  let credit=Math.min(gal,30000)*1+Math.min(Math.max(gal-30000,0),100000)*0.9+Math.min(Math.max(gal-130000,0),620000)*0.535;
+  const fed=Math.max(0,gal*G.fedExcise-credit);
+  const dtc=(shares[0]+shares[1])/100, wa=gal*3.785*G.waTaxL*dtc*G.waShare/100;
+  return fed+wa;
+}
+function getFlow(){return typeof flow==='function'?flow:require('./flow.js').flow}
+function size(V,G,simulate,FL){
+  const items=[];let red=V.filter(v=>v.color==='red'),white=V.filter(v=>v.color==='white');
+  const tons=v=>v.cases/v.cpt, add=(cat,k,n,unit,each,why,conf)=>{if(n>0)items.push({cat,k,n,unit,cost:n*each,each,why,conf})};
+  // Tanks and barrels are sized from the cellar flow: the most vessels in use on any day of a normal year, plus the design margin.
+  const N=FL.need,S=FL.size,when=k=>{const t=new Date(2001,7,1+N[k].at);return t.toLocaleDateString('en-US',{month:'short',day:'numeric'})};
+  const df=G.designFactor,mg=Math.round((df-1)*100);
+  const nRed=Math.ceil(N.redTank.v*df-1e-9),tankSize=S.redTank,nW=Math.ceil(N.whiteTank.v*df-1e-9),nS=Math.ceil(N.storage.v*df-1e-9),nB=Math.ceil(N.blend.v*df-1e-9);
+  const redGal=nRed*tankSize, tankCost=(gal,per)=>Math.round(per*1000*Math.pow(gal/1000,0.62)/50)*50;
+  add('Tanks','Jacketed red ferment tanks',nRed,tankSize.toLocaleString()+' gal',tankCost(tankSize,G.jacketGal),`${Math.round(N.redTank.v)} in use at the peak around ${when('redTank')}, one lot each, plus ${mg}% margin`,'Medium');
+  add('Tanks','Jacketed white tanks',nW,S.whiteTank.toLocaleString()+' gal',tankCost(S.whiteTank,G.jacketGal),`${Math.round(N.whiteTank.v)} in use at the peak around ${when('whiteTank')}, settling and fermenting, plus ${mg}% margin`,'Medium');
+  add('Tanks','Lot tanks for ML and storage',nS,S.storage.toLocaleString()+' gal',tankCost(S.storage,G.storageGal),`${Math.round(N.storage.v)} in use at the peak around ${when('storage')}, up to ${G.lotsPerTank} lots of the same wine combined after press: reds through ML until spring, unoaked whites, wine between barrel and blending; plus ${mg}% margin`,'Medium');
+  add('Tanks','Blending and bottling tanks',nB,S.blend.toLocaleString()+' gal',tankCost(S.blend,G.storageGal),`each wine comes together three weeks before bottling; ${Math.round(N.blend.v)} in use at the peak around ${when('blend')}`,'Medium');
+  const allTons=V.reduce((a,v)=>a+tons(v),0), grav=G.buildTier==='gravity';
+  const pressCost=allTons>60?110000:allTons>25?80000:55000;
+  add('Crush and press','Membrane press',1,allTons>60?'8 ton':allTons>25?'5 ton':'3 ton',pressCost,`${allTons.toFixed(0)} tons a year`,'Medium');
+  add('Crush and press','Destemmer',1,'',25000,'new; used units sell for $3k to $10k','Medium');
+  add('Crush and press','Vibrating sorting table',G.sort==='none'?0:1,'',12000,'hand sorting line','High');
+  add('Crush and press','Optical sorter',G.sort==='optical'?1:0,'',150000,'placeholder, no published price found','Low');
+  add('Crush and press','Forklift bin tipper',1,'',8000,'dumps picking bins onto the line','Low');
+  const chillTons=Math.max(10,Math.ceil(redGal/1000*3.5));
+  add('Cellar','Glycol chiller',1,chillTons+' tons refrigeration',chillTons*G.chillerTon,'peak red heat plus white chilling, sized from tank volume','Low');
+  add('Pumps and hoses','Must pump, 3" flexible impeller',grav?0:1,'',5500,grav?'gravity moves must from crush pad to tanks':'crush pad to tanks','High');
+  add('Pumps and hoses','Wine transfer pump, 2" flexible impeller',allTons>60?2:1,'',5300,'racking, transfers, filtration','High');
+  add('Pumps and hoses','Pumpover pump, centrifugal',Math.max(1,Math.ceil(nRed/4)),'',4300,'one per four red ferment tanks','Medium');
+  const hoseFt=(200+25*(nRed+nW+nS+nB))*(grav?0.6:1);
+  add('Pumps and hoses','Wine hose, 2" food grade',Math.round(hoseFt),'ft',G.hoseFt,grav?'shorter runs with gravity flow':'200 ft of working hose plus about 25 ft per tank','Low');
+  add('Pumps and hoses','Must hose, 3"',grav?0:100,'ft',G.hoseFt*1.75,'crush pad runs','Low');
+  add('Pumps and hoses','Tri-clamps, valves, gaskets, fittings',1,'',3000+150*(nRed+nW+nS),'base kit plus about $150 per tank','Low');
+  const barrels=Math.ceil(N.barrel.v*G.barrelSpare-1e-9);
+  add('Cellar','Barrel racks, 2-barrel steel',Math.ceil(barrels/2),'',150,'used double racks list near $120','Medium');
+  add('Barrel care','Barrel washing station',barrels>0?1:0,'',3700,'rotating-jet wash and steam head on a rolling stand, run off the hot washer','High');
+  add('Barrel care','Hot-water high-pressure washer',1,'',7500,'drives the barrel washer and tank cleaning; 4+ gpm at about 185°F','Low');
+  add('Barrel care','Sulfur burner and SO2 gas kit',barrels>0?1:0,'',600,`keeps empty barrels sound; about ${Math.round(FL.emptyBarrelDays/365)} barrels sit empty on an average day`,'Low');
+  add('Barrel care','Ozone generator',barrels>0&&G.ozone?1:0,'',6000,'sanitizing barrels and tanks without chlorine; placeholder','Low');
+  add('Cellar','Forklift, electric',1,'',35000,'placeholder','Low');
+  add('Cellar','Pallet jack',2,'',600,'','Medium');
+  add('Cellar','Cleaning: brushes, spray balls, wash-down hoses',1,'',3000,'placeholder','Low');
+  add('Cellar','Plate filter',1,'',8000,'pre-bottling; mobile bottler does sterile filtration','Low');
+  const L=LAB[G.lab]||LAB.outsource;
+  add('Lab',G.lab==='full'?'Lab: bench chemistry plus semi-automatic enzymatic analyzer':'Lab: pH meter, spectrophotometer, refractometer, SO2 and VA setup',L.equip?1:0,'',L.equip,G.lab==='full'?'analyzer price is a placeholder':'a minimum working lab is about $2k to $4k; this adds a spectrophotometer for YAN and malic','Medium');
+  const equip=items.reduce((a,i)=>a+i.cost,0);
+  return {items,equip,redGal,tankSize,allTons,nRed,nW,nS,nB,barrels,size:S,FL,tankGal:nRed*tankSize+nW*S.whiteTank+nS*S.storage+nB*S.blend};
+}
+function building(G,sz,peakBottled,hasLabRoom){
+  const T=TIERS[G.buildTier]||TIERS.custom, sp=[];
+  const addS=(k,key,sf,why)=>{if(sf>0)sp.push({k,key,sf:Math.round(sf),rate:T.cost[key],why})};
+  addS('Crush pad, covered','pad',1200+10*sz.allTons,'receiving, sorting, press');
+  addS('Fermentation hall','ferm',600+G.sfPerKgal*sz.tankGal/1000,`${Math.round(sz.tankGal).toLocaleString()} gal of tanks plus work area`);
+  addS('Barrel room','barrel',G.sfPerBarrel*sz.barrels,`${sz.barrels} barrels, ${G.buildTier==='gravity'?'cave or below-grade room':'insulated and cooled'}`);
+  addS('Case goods storage','storage',G.storage==='onsite'?G.sfPerCaseStored*peakBottled:0,G.storage==='onsite'?`peak of ${Math.round(peakBottled).toLocaleString()} bottled cases on pallets`:'');
+  addS('Lab','lab',hasLabRoom?250:60,hasLabRoom?'bench lab':'sample prep only');
+  addS('Tasting room and hospitality','tasting',G.tasting?G.trSqft:0,'');
+  const sub=sp.reduce((a,s)=>a+s.sf,0);
+  addS('Offices, restrooms, mechanical','support',sub*0.12,'about 12% of the rest');
+  sp.forEach(s=>{s.build=s.sf*s.rate;s.design=s.build*T.design/100});
+  const build=sp.reduce((a,s)=>a+s.build,0), design=sp.reduce((a,s)=>a+s.design,0);
+  const site=build*T.site/100, permits=build*G.permitPct/100;
+  return {T,spaces:sp,sqft:sp.reduce((a,s)=>a+s.sf,0),build,design,site,permits,total:build+design+site+permits};
+}
+// Workload-based labor. Hours per year at steady state, split into the harvest window and the rest of the year.
+// Workload-based labor, from the daily cellar calendar in flow.js (work()). A normal year is days 0 to 364.
+const TASK_WHY={crush:'pick days: crew setup, bins, forklift and sanitation, plus sorting hours per ton',press:'two people through each press load plus cleanup',cap:'twice a day per red lot while it is in tank',checks:'Brix and temperature, nutrients, SO2: a quarter hour per lot a day',moves:'pumping between vessels, tank cleaning, lot-tank work',barrel:'filling, monthly topping, a mid-term racking, washing on the way out',bottling:'six people beside a mobile line',cases:'pallets, club shipments, pickups, spread over each wine\'s selling year',general:'daily rounds in harvest, routine cleaning and records otherwise, sulfuring empty barrels'};
+function getWork(){return typeof work==='function'?work:require('./flow.js').work}
+function getTasks(){return typeof TASKS!=='undefined'?TASKS:require('./flow.js').TASKS}
+function labor(V,G,sz,lab,simulate,FL){
+  const WK=getWork()(FL,V,G,sz),TK=getTasks(),Tsum=new Float64Array(365);
+  for(let d=0;d<365;d++)for(const [k] of TK)Tsum[d]+=WK.T[k][d];
+  let hDays=0;for(let d=0;d<365;d++)hDays+=WK.active[d];
+  const hW=hDays/7,yW=52-hW,tasks=[];
+  TK.forEach(([k,name])=>{let h=0,y=0;for(let d=0;d<365;d++)(WK.active[d]?(h+=WK.T[k][d]):(y+=WK.T[k][d]));
+    if(h>0.5)tasks.push({season:'harvest',k:name,hrs:h,why:TASK_WHY[k]});if(y>0.5)tasks.push({season:'year',k:name,hrs:y,why:TASK_WHY[k]})});
+  let H=0,Yh=0;for(let d=0;d<365;d++)(WK.active[d]?(H+=Tsum[d]):(Yh+=Tsum[d]));
+  const wmH=hW*G.wmHarvestHrs, wmY=yW*G.wmCellarHrs;
+  const yRest=Math.max(0,Yh-wmY);
+  const perms=Math.floor(yRest/(yW*40)+0.4);
+  const partHrs=Math.max(0,yRest-perms*yW*40);
+  const otHrs=perms*hW*Math.max(0,G.permHarvestHrs-40);
+  // seasonal crew fills each harvest day's shortfall; headcount from the busiest week
+  const base=(G.wmHarvestHrs+perms*G.permHarvestHrs)/7, short=new Float64Array(365);let seasonalHrs=0;
+  for(let d=0;d<365;d++)if(WK.active[d]){short[d]=Math.max(0,Tsum[d]-base);seasonalHrs+=short[d]}
+  let pk7=0;for(let d=0;d<365;d++){let s=0;for(let i=0;i<7;i++)s+=short[(d+i)%365];pk7=Math.max(pk7,s/7)}
+  const seasonalHeads=Math.ceil(pk7/(50/7)-1e-9);
+  const avail=new Float64Array(365),offRate=(G.wmCellarHrs+perms*40)/7+(yW>0?partHrs/(yW*7):0);
+  for(let d=0;d<365;d++)avail[d]=WK.active[d]?base+seasonalHeads*50/7:offRate;
+  const b=1+G.burden/100;
+  const cost={perm:perms*G.cellarWage*2080*b,ot:otHrs*G.cellarWage*0.5*b,part:partHrs*G.cellarWage*(1+G.seasonalBurden/100),seasonal:seasonalHrs*G.seasonalWage*(1+G.seasonalBurden/100)};
+  const total=Object.values(cost).reduce((a,c)=>a+c,0);
+  let peakDay=0;for(let d=0;d<365;d++)peakDay=Math.max(peakDay,Tsum[d]);
+  return {tasks,harvestHrs:H,yearHrs:Yh,wmH,wmY,perms,partHrs,otHrs,seasonalHrs,seasonalHeads,cost,total,peakWeek:hW?H/hW:0,harvestWeeks:hW,peakDay,avail,WK};
+}
+function model(Vin,Gin,simulate){
+  const V=deepCopy(Vin),G=deepCopy(Gin),Y=G.years;
+  const tons=v=>v.cases/v.cpt;
+  const totCases=V.reduce((a,v)=>a+v.cases,0), allTons=V.reduce((a,v)=>a+tons(v),0);
+  const estate=G.fruit==='estate', own=G.facility==='build';
+  if(!own)G.storage='offsite';
+  const acres=estate?V.reduce((a,v)=>a+tons(v)/v.tpa,0):0;
+  const bearing=y=>y<3?0:y===3?0.3:y===4?0.7:1;
+  const FL=getFlow()(V,G,simulate);
+  const sz=own?size(V,G,simulate,FL):{items:[],equip:0,barrels:0};
+  // ---- lab program ----
+  const lots=V.reduce((a,v)=>a+Math.max(1,Math.ceil(tons(v)/G.lotTons)),0);
+  const tests=lots*G.testsPerLot, L=LAB[own?G.lab:'outsource'];
+  const outShare=own?1-L.share:0.5; // custom crush covers about half of routine testing in its fee
+  const labYear=tests*(outShare*G.testExt+(own?L.share:0)*(L.consum+L.hrs*G.labWage));
+  const lab={lots,tests,outTests:tests*outShare,inTests:own?tests*L.share:0,cost:labYear,equip:L.equip,name:own?L.name:'Custom crush plus outside lab'};
+  const lbr=own?labor(V,G,sz,lab,simulate,FL):null, laborCase=own?lbr.total/totCases:0;
+  // ---- vintages and sales first; the building is sized from them ----
+  const vint=[];const yearCost={fruit:Array(Y+1).fill(0),prod:Array(Y+1).fill(0),barrels:Array(Y+1).fill(0),dry:Array(Y+1).fill(0),farm:Array(Y+1).fill(0)};
+  for(let y=1;y<=Y;y++){
+    V.forEach((v,i)=>{
+      const t=tons(v), estT=estate?t*bearing(y):0, buyT=t-estT;
+      const fruit=buyT*v.grape, farm=estate&&bearing(y)>0?(t/v.tpa)*G.farmAcre:0;
+      const prod=own?v.cases*(G.suppliesCase+laborCase):v.cases*G.customCase;
+      const bbl=v.barrel>0?v.cases*2.4/59.4:0, newShare=v.newOak/100;
+      const stock=v.barrel>0?FL.bPeak[i]*G.barrelSpare:0;
+      const barrelCost=y===1?stock*(newShare*G.barrelNew+(1-newShare)*G.barrelUsed):bbl*(newShare*G.barrelNew+Math.max(0,0.2-newShare)*G.barrelUsed);
+      const dry=v.cases*(G.bottlePer*12+G.carton+G.bottling);
+      const relYear=y+Math.floor((9.5+v.release)/12), botYear=y+Math.floor((9.5+Math.min(bottleOf(v),v.release))/12);
+      yearCost.fruit[y]+=fruit;yearCost.farm[y]+=farm;yearCost.prod[y]+=prod;yearCost.barrels[y]+=barrelCost;if(botYear<=Y)yearCost.dry[botYear]+=dry;
+      vint.push({i,y,relYear,botYear,cases:v.cases,left:v.cases,cost:(fruit+farm+prod+barrelCost+dry)/v.cases});
+    });
+  }
+  const shares=G.tasting?G.shareTR:G.shareNoTR;
+  const netFactor=(shares[0]+shares[1]*(1-G.clubDisc/100)+shares[2]*G.wholesaleFactor/100)/100;
+  const firstRel=V.map(v=>1+Math.floor((9.5+v.release)/12));
+  const sales=[];
+  for(let y=0;y<=Y;y++){
+    let rev=0,cogs=0,sold=0,dtcRev=0;
+    V.forEach((v,i)=>{
+      const k=y-firstRel[i]; if(k<0)return;
+      let cap=v.cases*(G.ramp[Math.min(k,G.ramp.length-1)]/100);
+      for(const vt of vint){if(vt.i!==i||vt.relYear>y||vt.left<=0||cap<=0)continue;const q=Math.min(vt.left,cap);vt.left-=q;cap-=q;sold+=q;
+        rev+=q*12*v.price*netFactor;dtcRev+=q*12*v.price*(shares[0]+shares[1]*(1-G.clubDisc/100))/100;cogs+=q*vt.cost}
+    });
+    const inv=vint.filter(vt=>vt.y<=y).reduce((a,vt)=>a+vt.left,0);
+    const bottled=vint.filter(vt=>vt.botYear<=y).reduce((a,vt)=>a+vt.left,0);
+    const bottledIn=vint.filter(vt=>vt.botYear===y).reduce((a,vt)=>a+vt.cases,0);
+    const invCost=vint.filter(vt=>vt.y<=y).reduce((a,vt)=>a+vt.left*vt.cost,0);
+    sales.push({rev,cogs,sold,dtcRev,inv,bottled,bottledIn,invCost});
+  }
+  const peakBottled=Math.max(...sales.map(s=>s.bottled));
+  // ---- facility ----
+  const hasLabRoom=own&&G.lab!=='outsource';
+  const bld=own?building(G,sz,peakBottled,hasLabRoom):{spaces:[],sqft:0,build:0,design:0,site:0,permits:0,total:0,T:TIERS[G.buildTier]};
+  const capex=Array(Y+1).fill(0),capLines=[];
+  const addCap=(y,amt,label)=>{if(y<=Y&&amt){capex[y]+=amt;capLines.push({y,amt,label})}};
+  // ---- land: planted acres grossed up for roads, headlands and unplantable ground, plus the winery site, at least the zoning minimum ----
+  const vineGross=acres/(G.plantablePct/100);
+  const siteAcres=own?Math.max(1,bld.sqft/(G.siteCoverage/100)/43560)*(G.buildTier==='gravity'?1.5:1):(G.tasting?0:0);
+  const need=vineGross+siteAcres, landAcres=need>0?Math.max(need,G.minParcel):0, spare=landAcres-need;
+  // irrigated farmland only matters if there's a vineyard watered with the land's own right; otherwise the parcel can be dry ground
+  const priceAcre=estate&&G.water!=='buyRight'?G.landAcre:G.dryLandAcre;
+  const LD={planted:acres,vineGross,siteAcres,need,bought:landAcres,spare,priceAcre,unplantable:vineGross-acres};
+  // ---- water ----
+  const W=waterPlan(V,G,own,estate,acres,sz,FL);
+  const prep=estate&&G.water==='buyRight'?vineGross*G.rawPrepAcre:0;
+  const land=landAcres*priceAcre+W.rights; addCap(0,land-W.rights,'Land');addCap(0,prep,'Clearing raw ground');
+  addCap(0,W.rights,'Water rights');addCap(0,W.wellCap+W.transfer,'Wells and water rights work');
+  addCap(0,bld.design,'Design and engineering');addCap(0,bld.site+bld.permits,'Site work and permits');addCap(0,bld.build,'Construction');
+  if(!own&&G.tasting)addCap(0,G.trFitout*0.4,'Leased tasting room fit-out');
+  addCap(0,sz.equip,'Cellar equipment'); addCap(10,sz.equip*0.5,'Equipment replacement');
+  const vineDev=acres*(G.vineDevAcre+G.dripAcre); [0.6,0.25,0.15].forEach((f,i)=>addCap(i,vineDev*f,'Vineyard development'));
+  for(let y=1;y<=2;y++)addCap(y,acres*G.farmAcre,'Pre-bearing farming');
+  // ---- years ----
+  const rows=[];
+  for(let y=0;y<=Y;y++){
+    const s=sales[y], b=1+G.burden/100;
+    const staff={
+      winemaker:y>=1&&G.owner==='hire'?G.wmSalary*b:0,
+      owner:G.owner==='winemaker'?G.ownerSalary:0,
+      admin:y>=1?G.adminCost:0,
+      tasting:G.tasting&&y>=Math.min(...firstRel)?G.trStaff:0
+    };
+    const assessed=land*Math.pow(1+G.landGrowth/100,y)+(y>=0?bld.build+bld.design+bld.site+sz.equip:0);
+    const fixed={
+      lease:G.tasting&&!own&&y>=Math.min(...firstRel)?G.trLease:0,
+      util:y>=1?G.utilBase+G.utilCase*totCases*(own?1:0.2):0,
+      insure:(capex.slice(0,y+1).reduce((a,c)=>a+c,0))*G.insurePct/100,
+      maint:own&&y>=1?(bld.build+sz.equip)*G.maintPct/100:0,
+      marketing:s.rev*G.marketingPct/100+(y>=1?15000:0),
+      fees:s.dtcRev*G.dtcFeePct/100,
+      propTax:assessed*G.propTaxPct/100,
+      storage:G.storage==='offsite'&&s.bottled+s.bottledIn>0?s.bottled*12*G.offsiteCaseMonth+(s.bottledIn+s.sold)*G.offsiteInOut/2+G.offsiteAdmin:0,
+      lab:y>=1?lab.cost:0,
+      water:y>=1?W.annual:0,
+      excise:exciseTax(s,G,shares)
+    };
+    const opex=Object.values(staff).reduce((a,c)=>a+c,0)+Object.values(fixed).reduce((a,c)=>a+c,0);
+    const prodCash=yearCost.fruit[y]+yearCost.farm[y]+yearCost.prod[y]+yearCost.barrels[y]+yearCost.dry[y];
+    rows.push({y,...s,staff,fixed,opex,prodCash,capex:capex[y],gross:s.rev-s.cogs});
+  }
+  const dep=Array(Y+1).fill(0);
+  for(let y=1;y<=Y;y++){dep[y]+=(bld.build+bld.design+bld.site+bld.permits)/30+sz.equip/10+(!own&&G.tasting?G.trFitout*0.4/10:0);if(y>=11)dep[y]+=sz.equip*0.5/10;if(estate&&y>=3)dep[y]+=(vineDev+2*acres*G.farmAcre)/25}
+  rows.forEach(r=>{r.ebitda=r.rev-r.cogs-r.opex;r.dep=dep[r.y];r.ebit=r.ebitda-r.dep});
+  const eligible=capex.slice(0,3).reduce((a,c)=>a+c,0);
+  const building0=bld.build+bld.design+bld.site+bld.permits;
+  const fin={cash:finance(rows,G,0,land,building0,sz,acres,vineDev),loan:finance(rows,G,eligible*G.loanLTV/100,land,building0,sz,acres,vineDev)};
+  return {rows,fin,sz,bld,lab,lbr,FL,W,LD,acres,landAcres,land,capexTotal:capex.reduce((a,c)=>a+c,0),capLines,netFactor,totCases,allTons,firstRel,peakBottled,V,G};
+}
+function finance(rows,G,loanAmt,land,building,sz,acres,vineDev){
+  const Y=G.years, r=G.loanRate/100, n=G.loanTerm;
+  const pmt=loanAmt>0?loanAmt*r/(1-Math.pow(1+r,-n)):0;
+  let bal=loanAmt,cash=0,cum=0,equityTot=0;const out=[];
+  for(const row of rows){
+    const y=row.y;
+    const interest=bal*r, principal=y>=1&&bal>0?Math.min(bal,pmt-interest):0;
+    const intPaid=y>=1?interest:0; // interest during build year capitalized into the draw, kept simple
+    const cfo=row.rev-row.opex-row.prodCash-intPaid;
+    const draw=y===0?loanAmt:0;
+    let c=cash+cfo-row.capex+draw-principal;
+    let equity=0; if(c<G.reserve){equity=G.reserve-c;c=G.reserve}
+    let dist=0; const ds=pmt;
+    const dscr=y>=1&&ds>0?(row.rev-row.opex-row.prodCash)/ds:null;
+    if(y>=2&&cfo>0&&c>G.reserve*2&&equity===0){dist=(c-G.reserve*2)*G.distPct/100;c-=dist}
+    bal-=principal; cash=c; equityTot+=equity;
+    const ownerSal=row.staff.owner;
+    const ownerCF=-equity+dist+ownerSal;
+    cum+=ownerCF;
+    const ebt=row.ebit-intPaid;
+    out.push({y,cfo,equity,dist,ownerSal,ownerCF,cum,cash,bal,interest:intPaid,principal,dscr,ebt});
+  }
+  // terminal value at year Y: land appreciated + undepreciated assets + inventory at cost + cash - debt
+  const last=rows[rows.length-1];
+  const landVal=land*Math.pow(1+G.landGrowth/100,Y);
+  const bookBuild=Math.max(0,building)*(1-Y/30)+sz.equip*0.5*(1-(Y-10)/10)+(acres?(vineDev)*(1-(Y-3)/25):0);
+  const tv=landVal+bookBuild+last.invCost+cash-bal;
+  const flows=out.map(o=>o.ownerCF);flows[Y]+=tv;
+  const irr=IRR(flows), npv=flows.reduce((a,f,i)=>a+f/Math.pow(1+G.discount/100,i),0);
+  const firstProfit=out.find(o=>o.y>=1&&o.ebt>0&&out.slice(o.y).every(p=>p.ebt>0));
+  const payback=out.find(o=>o.cum>=0&&o.y>0&&out.slice(o.y).every(p=>p.cum>=0));
+  const late=out.filter(o=>o.y>Y-10);
+  return {out,loanAmt,pmt,equityTot,peak:-Math.min(...out.map(o=>o.cum)),tv,irr,npv,firstProfit:firstProfit?firstProfit.y:null,payback:payback?payback.y:null,
+    avgPayout:late.reduce((a,o)=>a+o.dist+o.ownerSal,0)/late.length,
+    minDscr:(()=>{const s=rows.findIndex(r=>r.sold>=0.9*rows[rows.length-1].sold&&r.y>0);const d=out.filter(o=>o.dscr!=null&&o.y>=s).map(o=>o.dscr);return d.length?Math.min(...d):null})(),
+    weakYears:out.filter(o=>o.dscr!=null&&o.dscr<1.25).length};
+}
+function IRR(f){let lo=-0.99,hi=1;const npv=r=>f.reduce((a,c,i)=>a+c/Math.pow(1+r,i),0);if(npv(lo)*npv(hi)>0)return null;for(let k=0;k<100;k++){const m=(lo+hi)/2;if(npv(lo)*npv(m)<=0)hi=m;else lo=m}return (lo+hi)/2}
+
+
+const SOURCES=[
+ ['Cabernet Sauvignon grapes','$3,170/ton','Washington 2025 average for Cabernet was $3,169/ton, the highest of any variety. Red Mountain fruit runs about three times the state average.','High','https://www.tricitiesbusinessnews.com/articles/focus-2026-viticulture'],
+ ['Pinot Noir grapes','$2,800/ton','2025 Oregon pricing report: statewide weighted average $2,445, North Willamette Valley median $2,794. Assumes Oregon fruit; Washington grows little Pinot.','High','https://industry.oregonwine.org/wp-content/uploads/2025-Oregon-Grape-Pricing-Report.pdf'],
+ ['Yields','2.8 to 5 tons/acre','Oregon averaged 2.81 tons/acre in 2025; Washington commonly 4 to 5. Premium reds are set lower.','Medium','https://wineindustryadvisor.com/2026/07/02/oregon-wine-board-releases-2025-oregon-vineyard-and-winery-census-report/'],
+ ['Vineyard farming','$6,500/acre/yr','Same OSU budget put full-production economic cost at $10,505/acre including ownership costs; this uses a cash share of that, scaled.','Low','https://agsci.oregonstate.edu/sites/agscid7/files/oaeb/pdf/EM8974-E.pdf'],
+ ['Jacketed tanks','$9/gal','A new 529-gallon jacketed variable-capacity tank lists at $5,795 (about $11/gal); used 1,500-gallon jacketed tanks sell near $5,200 (about $3.50/gal). Larger new tanks cost less per gallon.','Medium','https://www.gwkent.com/pico-mobile-wine-tank-4.html'],
+ ['Press','$55k to $110k by size','A new 25 hL membrane press lists at about EUR 27,500; pneumatic presses range roughly $15,000 to $120,000.','Medium','https://www.machineseeker.ie/puleo+s.p.a.-athena+25/i-22064003'],
+ ['Glycol chiller','$1,800 per ton of refrigeration','Glycol chiller systems quoted at $12,000 to $50,000+; a used 10-ton unit listed at $8,000.','Low','https://nerdbot.com/?p=221622'],
+ ['New French oak barrel','$1,400','New French oak runs $1,200 to $2,000; new 2026 Taransaud barrels listed at $1,400. French oak prices have roughly tripled in a decade.','High','https://balanced-business-group.squarespace.com/perspectives/should-your-winery-lease-or-buy-barrels'],
+ ['Used barrel','$400','Once-used French barrels list near $800; neutral barrels far less. Used for the mixed first-year stock.','Low','https://www.winebusiness.com/classifieds/usedbarrels/?go=search&s1=16'],
+ ['Dry goods','$2.60 per bottle + $2.50 carton','Glass $0.50 to $1.50+, premium corks up to $1.50, polylaminate capsules about $0.22, labels vary widely with finish.','Medium','https://sites.google.com/view/cardboardgiftboxes/wine-packaging'],
+ ['Mobile bottling','$3.50/case','$3.05/case for standard bottles plus a $2,000 setup fee, which worked out to $3.82/case on a 2,600-case run.','High','https://www.wineandbeersupply.com/blogs/content/mobile-bottling-vs-in-house-bottling-cost-breakdown'],
+ ['Custom crush','$45/case','Boutique facilities charge $1,500 to $3,600 per ton ($26 to $60/case); Sonoma about $2,700 to $3,300/ton ($38 to $45/case).','Medium','https://www.spiritedbiz.com/?p=11149'],
+ ['Hired winemaker','$120,000','2025 WBM survey average for a head winemaker at a mid-sized winery: $160,133, California-weighted. Oregon executive winemakers averaged about $105,600 in 2023.','Medium','https://ajyingstwine.substack.com/p/wines-workforce-reality'],
+ ['Cellar master','$70,000','2024 WBM average $92,183, California-weighted; Oregon pay runs well below that.','Low','https://winebusiness.com/wbm/article/292594'],
+ ['Tasting room staff','$190,000/yr','Tasting room manager averaged $84,530 in the 2024 WBM survey; the rest covers part-time staff.','Low','https://winebusiness.com/wbm/article/292594'],
+ ['Channel mix with tasting room','42 / 28 / 30%','SVB 2026: small premium wineries sell over 70% direct, about 27% in the tasting room and 28% through the club. Other direct sales are folded into tasting room here.','Medium','https://beernet.com/?p=17616'],
+ ['Wholesale price','50% of retail','Standard practice sets distributor FOB at about half of suggested retail.','Medium','https://www.wineberserkers.com/t/when-a-wine-is-cheaper-at-retail-where-do-you-buy/117530?page=2'],
+ ['Loan rate','7.5%','SBA 504 real estate loans about 5% to 7%; SBA 7(a) variable about 10% with prime at 7%.','Medium','https://www.nerdwallet.com/business/loans/learn/sba-loan-rates%22%E3%80%91'],
+ ['Excise tax','not modeled','Federal excise on still wine under 14% is $1.07/gal, about $0.21 a bottle, before small-producer credits.','Medium','https://www.bighammerwines.com/blogs/vine-blog/the-real-cost-of-cheap-wine-where-your-10-actually-goes'],
+ ['Club discount, sales ramp, admin, utilities, marketing','various','Assumptions without a specific source yet.','Low',''],
+ ['Building, metal shell','$25 to $65/sq ft shell; this model uses $120 to $250 by space','Perlo: pre-engineered metal buildings run $25 to $30, tilt-up $40 to $50 and steel frame $50 to $65 a square foot for the shell alone. Process floors, drains, insulation, cooling and power push working space well above that.','Medium',''],
+ ['Building, custom production','$160 to $500/sq ft by space','Small new warehouses average about $139/sq ft (Cushman and Wakefield); winery fit-out is often planned at $150 to $400/sq ft. Barrel and fermentation space sit at the top of that range, case storage near the bottom.','Medium',''],
+ ['Building, gravity-flow hillside','$200 to $800/sq ft by space, site work 22%','No published cost per square foot found. Built on the custom tier plus excavation into the slope, three working levels and architect-led design. Treat as a placeholder.','Low',''],
+ ['Design and engineering fees','8% / 12% / 18% of construction','Neumann Monson: architect fees typically run 7 to 15% of construction, higher for complex or bespoke work. Split here across each space in proportion to its construction cost.','Medium',''],
+ ['Permits','1% of construction','Perlo: commonly 0.5 to 1.5% of construction value.','Medium',''],
+ ['Property tax on inventory','None','Washington exempts business inventories from property tax under RCW 84.36.477.','High','https://app.leg.wa.gov/rcw/default.aspx?cite=84.36.477'],
+ ['Property tax rate','1% of land, building and equipment','Placeholder for a rural Washington levy rate; varies by county and levy district.','Low',''],
+ ['Off-site bonded storage','$0.35/case/month, $1 in-and-out, $3,000/yr admin','WineDirect lists $0.35 per case per month, $0.50 per case in and $0.50 out, and $250 a month for bonded tax reporting.','High',''],
+ ['Outside lab analysis','$40 each','Cornell: pH $10.50, YAN $59, juice panel $81. Lodi Wine Labs: VA $29, harvest panel $120. Gusmer: juice panel $66, cellar panel $94. Your own figure was $35 to $50.','High',''],
+ ['In-house lab equipment','$9,000 basic, $45,000 full','A minimum working lab costs about $2,000 to $4,000; a spectrophotometer adds $3,000 to $5,000 and a good benchtop pH meter $1,200 to $2,300. The enzymatic analyzer in the full tier is a placeholder.','Medium',''],
+ ['Pumps','$4,300 to $5,500 each','GW Kent 2" flexible impeller $5,300, 3" $5,478; helicoidal centrifugal $4,270; must pumps $4,750 to $5,735.','High',''],
+ ['Hose and fittings','$20/ft 2", $35/ft 3"; fittings $3,000 plus $150 per tank','No current per-foot price found for food-grade wine hose. Estimate.','Low',''],
+ ['Sorting and destemming','$12,000 table, $25,000 destemmer','Vibrating sorting tables from about $12,000 new; used Bucher units near $16,000. New entry destemmers run $10,000 to $30,000; a used 2 t/hr Magitec sold for $9,875. Optical sorter is a placeholder.','Medium',''],
+ ['Barrel racks','$150 per 2-barrel rack','Used steel racks sell for about $40 to $120; plastic 2-barrel racks list at $370.','Medium',''],
+ ['Other Washington grape prices','By variety, see the variety list','Washington Wine Commission 2022 averages by variety (Chardonnay $1,016, Sauvignon Blanc $992, Riesling $877, Syrah $1,339, Merlot $1,448, Cabernet Franc $2,074, Malbec $1,658, Petit Verdot $1,923, and others), scaled 18% to match the all-variety rise to $1,621 in 2024. Merlot uses its 2024 average of $2,595; Malbec its 2024 figure, down $79. Later reports publish only headline numbers.','Medium','https://www.washingtonwine.org/wp-content/uploads/2023/03/Grape-Production-Report-2022-1.pdf'],
+ ['Minimum wage floor','$17.13/hr (2026), $17.73 (2027)','Washington minimum wage, which covers agricultural and winery workers. Overtime at 1.5 times after 40 hours a week.','High','https://lni.wa.gov/MinWage'],
+ ['Cellar and harvest wages','$24/hr full-time, $20/hr seasonal','Estimates a few dollars above the state minimum; no published Washington cellar-worker wage survey found.','Low',''],
+ ['Task hours','See the labor breakdown','Hours per pumpover, crush-day crew, bottling and barrel work are practitioner estimates, meant to be tuned against your own experience.','Low',''],
+ ['Cellar supplies','$8/case','Yeast, nutrients, SO2, fining agents, filter pads and cleaning chemicals. Estimate.','Low',''],
+ ['Tank prices by size','$9/gal at 1,000 gal, scaling with size to the 0.62 power','GW Kent jacketed variable-capacity tanks: 290 gal $3,995, 528 gal $5,695, 820 gal $8,495, 1,070 gal $8,999. That spread fits cost rising with size to about the 0.62 power, so a 500-gallon tank costs about $12/gal and a 4,000-gallon tank about $5.90.','High','https://www.gwkent.com/equipment/wine-tanks-fermenters.html'],
+ ['Barrel washing station','$3,700','GW Kent manual barrel washing station with rotating jet and steam nozzle, $3,695; runs off a separate pressure washer.','High','https://www.gwkent.com/automatic-barrel-washer-1.html'],
+ ['Hot-water washer, sulfur kit, ozone','$7,500, $600, $6,000','Estimates. Barrel washers need a hot or cold pressure washer of 4 gpm or more.','Low','https://www.gwkent.com/aaquablaster.html'],
+ ['Vineyard development','$21,500/acre plus drip','OSU eastern Oregon Cabernet budget: about $12,500/acre cash to establish through year 5, scaled for inflation. Drip is now its own line.','Medium','https://agsci.oregonstate.edu/sites/agscid7/files/oaeb/pdf/EM8974-E.pdf'],
+ ['Drip irrigation','$3,500/acre','OSU budget: drip at $3,000/acre custom installed; an older OSU budget had $2,000/acre plus $500/acre of filtration. Scaled up slightly.','Medium','https://agsci.oregonstate.edu/sites/agscid7/files/oaeb/pdf/EM8974-E.pdf'],
+ ['Federal excise and credit','$1.07/gal less $1.00 credit','Still wine up to 16% ABV is $1.07 per wine gallon; the CBMA credit is $1.00 on the first 30,000 gallons, $0.90 on the next 100,000 and $0.535 on the next 620,000 removed in a year.','High','https://www.ttb.gov/regulated-commodities/beverage-alcohol/cbma/craft-beverage-modernization-and-tax-reform-cbmtra'],
+ ['Washington wine tax','$0.2292/liter','Table wine rate; fortified (over 14%) is $0.4536 unless the alcohol comes only from natural fermentation and an affidavit of exception is on file. Paid by the winery on its own retail and direct sales; by the distributor on wholesale.','High','https://dor.wa.gov/sites/default/files/2023-08/TRM_46_WineTax.pdf'],
+ ['Permit-exempt wells','5,000 gal/day industrial','RCW 90.44.050 lets a well supply up to 5,000 gallons a day for industrial use, which can cover winery process water; vineyard irrigation beyond that needs a water right.','High','https://ecology.wa.gov/water-shorelines/water-supply/water-rights/groundwater-permit-exemption'],
+ ['Water right price','$3,000/acre-foot','Reported Washington sales run $500 to $6,500 per annual acre-foot where water is scarce; one buyer paid $3,000 in Columbia County; Kittitas County paid $4,632 and $7,000 for mitigation water.','Medium','https://dailyastorian.com/?p=557673'],
+ ['Vineyard water use and district fees','1.8 acre-ft/acre; $150/acre','Water use is an estimate for deficit-irrigated wine grapes. WSU budgets used a $80/acre Roza district charge in 2002, scaled up. Dry land at $4,000/acre is an estimate.','Low','https://agribusiness-mgmt.wsu.edu/agbusresearch/docs/wine_grapes/eb1955.pdf'],
+ ['Wells','Irrigation $100/ft, winery $60/ft','Irrigation wells run $25 to $110 a foot nationally; eastern Washington basalt pushes toward the top. Depths are placeholders; they vary a lot by site.','Low','https://www.angi.com/articles/how-much-does-well-drilling-cost.htm'],
+ ['Irrigated farmland','$15,000/acre','Mid-Columbia farmland commands $10,000 to $15,000 an acre depending on condition, improvements and the source of water; high-value farmland with water rights up to $17,000. Planted land in top AVAs runs far higher.','Medium','https://www.heraldnet.com/business/big-farm-deal-171m-for-14500-acres-in-eastern-washington'],
+ ['Dry or scrub land; clearing','$4,000/acre; $1,500/acre to clear','Estimates. Varies enormously by county and access.','Low',''],
+ ['Zoning minimum parcel','20 acres','Grant County agricultural zone listings show a 40-acre minimum; a Benton County listing shows an AP-20 zone with a 20-acre minimum. Set to zero for an industrial lot.','Medium','https://peoplescompany.com/listings/land-grant-franklin-county-washington-1325-acres-listing-number-18104'],
+ ['Plantable share and site coverage','80% plantable; buildings 12% of site','Estimates for roads, headlands, setbacks and unplantable ground, and for parking, septic and wastewater area around the winery.','Low',''],
+];
+
+// Steady-state cellar flow: every lot of several overlapping vintages, day by day, by location, in gallons and vessels.
+// Day 0 = Aug 1 of the harvest year. Vintages k=-3..1 are identical and offset by 365 days, so days 0 to 364
+// are a normal year once the brand is running, with older vintages still in barrel or bottle.
+const LOCS=[['pad','Crush pad'],['press','Press'],['redTank','Red ferment tanks'],['whiteTank','White tanks'],['storage','Lot tanks: ML and storage'],['blend','Blending and bottling tanks'],['barrel','Barrels'],['bottled','Bottled, not yet sold']];
+const UNIT={pad:['bin','bins'],press:['press load','press loads'],redTank:['tank','tanks'],whiteTank:['tank','tanks'],storage:['tank','tanks'],blend:['tank','tanks'],barrel:['barrel','barrels'],bottled:['pallet','pallets']};
+const AUG1=213, MIDOCT=288-213, MO=30.44, GAL_CASE=2.378, BBL=59.4, STD_TANK=[500,750,1000,1500,2000,2500,3000,4000,5000,6000,8000];
+const flowCache={};
+function lotSim(v,tons,pick,simulate){
+  const k=[v.brix,v.soak,v.setF,v.ext,pick,tons.toFixed(2)].join();
+  if(!flowCache[k])flowCache[k]=simulate({tons,brix:v.brix,yan:180,dapDay:-1,dapAmt:60,soakDays:v.soak??3,soakF:50,fruitF:65,setF:v.setF??85,coolBTU:6800,vessel:'tank',ambF:62,swingF:0,emDays:v.ext??0,yeast:'robust',
+   malic:2.5,ml:'seq',mlHeat:false,mlHeatF:68,winterF:52,summerF:68,barrelF:58,harvestDOY:pick,pressLoad:5,pressCycle:3,
+   binTons:0.5,crushRate:8,setupHrs:1.5,sort:'hand',mustGal:180,headspace:20,freeRun:115,pressGal:45,leesPct:4,pressHandling:'blend',barrelRule:'spring',settleDays:10});
+  return flowCache[k];
+}
+function lotPlan(V,G,simulate){
+  const lots=[], short={}, allTons=V.reduce((a,v)=>a+v.cases/v.cpt,0), pressT=allTons>60?8:allTons>25?5:3;
+  V.forEach((v,wi)=>{
+    const tons=v.cases/v.cpt, n=Math.max(1,Math.ceil(tons/G.lotTons-1e-9)), lt=tons/n, cases=v.cases/n;
+    const bm=Math.min(v.bottle??(v.barrel>0?Math.round((v.color==='red'?6:0.5)+v.barrel+1):5),v.release),bottle=MIDOCT+bm*MO, release=MIDOCT+v.release*MO;
+    for(let j=0;j<n;j++){
+      const pick=(v.pick??270)+j*2, p=pick-AUG1, S=[];
+      const seg=(loc,a,b,gal,units,x)=>{if(b>a)S.push({loc,a:p+a,b:p+b,gal,units,...x})};
+      const ev=(loc,a,gal,units)=>S.push({loc,a:p+a,b:p+a+1,gal,units,ev:true});
+      const bot=bottle-p, rel=release-p, bl=bot-21, wineGal=v.cases*GAL_CASE*1.03, bins=Math.ceil(lt/0.5-1e-9), loads=Math.ceil(lt/pressT-1e-9);
+      if(v.color==='red'){
+        const r=lotSim(v,lt,pick,simulate);
+        const pressDay=r.pressDay??20, pressEnd=r.pressEnd??20.2, gal=r.gal??lt*160, bg=r.barrelGal??gal*0.96;
+        const barrelDay=Math.min(r.barrelDay??200,bot-30);
+        ev('pad',0,r.mustGal,bins);seg('redTank',0,pressEnd,r.tankGal);ev('press',Math.floor(pressDay),gal,loads);
+        if(v.barrel>0){seg('storage',pressEnd,barrelDay,gal);let out=Math.min(barrelDay+v.barrel*MO,bl);if(barrelDay+v.barrel*MO>bl+7)short[wi]=(bl-barrelDay)/MO;if(bl-out<60)out=bl;seg('barrel',barrelDay,out,bg,Math.ceil(bg/BBL-1e-9));seg('storage',out,bl,bg)}
+        else seg('storage',pressEnd,bl,gal);
+        seg('blend',bl,bot,bg,null,{wine:wineGal,n});
+      }else{
+        const juice=lt*170;
+        ev('pad',0,lt*180,bins);ev('press',0,juice,loads);seg('whiteTank',0,2,juice*1.1);
+        if(v.barrel>0){let out=Math.min(2+v.barrel*MO,bl);if(2+v.barrel*MO>bl+7)short[wi]=(bl-2)/MO;if(bl-out<60)out=bl;seg('barrel',2,out,juice*0.96,Math.ceil(juice*0.96/BBL-1e-9));seg('storage',out,bl,juice*0.94)}
+        else{seg('whiteTank',2,21,juice*1.1);seg('storage',21,bl,juice*0.96)}
+        seg('blend',bl,bot,juice*0.94,null,{wine:wineGal,n});
+      }
+      const bg=cases*GAL_CASE;
+      seg('bottled',bot,rel,bg,cases/56);
+      for(let q=0;q<12;q++){const f=1-(q+0.5)/12;seg('bottled',rel+q*MO,rel+(q+1)*MO,bg*f,cases*f/56)}
+      const rr=v.color==='red'?lotSim(v,lt,pick,simulate):null;
+      lots.push({wi,name:v.name,j,n,tons:lt,cases,wineCases:v.cases,pick,p,color:v.color,segs:S,bottle,release,bins,loads,
+        crushHrs:rr?(rr.crushHrs??lt/8+1.5):lt/8+0.5,pressHrs:rr?(rr.pressHrs??loads*3):loads*3.5,mustGal:lt*180});
+    }
+  });
+  return {lots,pressT,short};
+}
+function flow(V,G,simulate){
+  const {lots:base,pressT,short}=lotPlan(V,G,simulate), kk=Math.max(1,G.lotsPerTank||1), D=365*4;
+  // one tank size per tank type: the smallest standard size that holds the largest lot there
+  const size={};['redTank','whiteTank','storage','blend'].forEach(k=>{const mx=Math.max(0,...base.flatMap(l=>l.segs.filter(s=>s.loc===k).map(s=>k==='blend'?Math.min(s.wine,8000):k==='storage'?s.gal*Math.min(kk,l.n):s.gal)));size[k]=STD_TANK.find(s=>s>=mx)||STD_TANK[STD_TANK.length-1]});
+  base.forEach(l=>l.segs.forEach(s=>{if(s.loc==='storage')s.units=1/Math.min(kk,l.n);else if(s.units==null)s.units=s.loc==='blend'?Math.ceil(s.wine/size.blend-1e-9)/s.n:Math.ceil(s.gal/size[s.loc]-1e-9)}));
+  const mk=()=>{const o={};LOCS.forEach(([k])=>o[k]=new Float64Array(D));return o};
+  const lanes=mk(),lanes0=mk(),ves=mk(),ves0=mk(),bWine=V.map(()=>new Float64Array(D)),grp={};
+  for(let k=-3;k<=1;k++)base.forEach(L=>L.segs.forEach(s=>{
+    const a=s.a+365*k,b=s.b+365*k;
+    for(let d=Math.max(0,Math.floor(a));d<Math.min(D,Math.ceil(b));d++){
+      const w=s.ev?1:Math.min(b,d+1)-Math.max(a,d);if(w<=0)continue;
+      lanes[s.loc][d]+=s.gal*w;if(k===0)lanes0[s.loc][d]+=s.gal*w;
+      // a vessel counts as in use on any day it holds wine, so on a transfer day both vessels count
+      const u=s.loc==='bottled'?s.units*w:s.units;
+      if(s.loc==='storage'){if(u){const g=grp[L.wi+'|'+k]||(grp[L.wi+'|'+k]=new Float64Array(D));g[d]+=u}}else{ves[s.loc][d]+=u;if(k===0)ves0[s.loc][d]+=u;}
+      if(s.loc==='barrel'&&u)bWine[L.wi][d]+=u;
+    }
+  }));
+  for(const key in grp){const g=grp[key],k0=key.endsWith('|0');for(let d=0;d<D;d++)if(g[d]>0){const n=Math.ceil(g[d]-1e-9);ves.storage[d]+=n;if(k0)ves0.storage[d]+=n}}
+  const peak=(a)=>{let mx=0,at=0;for(let d=0;d<365;d++)if(a[d]>mx){mx=a[d];at=d}return{v:mx,at}};
+  const need={};LOCS.forEach(([k])=>need[k]=peak(ves[k]));
+  const bPeak=bWine.map(a=>peak(a).v);
+  const end=Math.max(...base.map(L=>L.release+365));
+  const installedB=Math.ceil(need.barrel.v*(G.barrelSpare||1.05)-1e-9);let emptyBarrelDays=0;for(let d=0;d<365;d++)emptyBarrelDays+=Math.max(0,installedB-ves.barrel[d]);
+  return {lots:base,lanes,lanes0,ves,ves0,size,need,bPeak,pressT,D,end,short,emptyBarrelDays};
+}
+
+// Daily cellar work and equipment time, built lot by lot from the same calendar as the flow.
+const TASKS=[['crush','Crush days and sorting'],['press','Pressing'],['cap','Pumpovers and punchdowns'],['checks','Ferment checks and additions'],['moves','Transfers, racking, tank cleaning'],['barrel','Barrel work'],['bottling','Bottling'],['cases','Case goods and shipping'],['general','Rounds, cleaning, upkeep']];
+const EQUIP=[['crushline','Sorting and destemming line'],['press','Press'],['mustpump','Must pump'],['popump','Pumpover pumps'],['xfer','Transfer pumps'],['washer','Barrel washer'],['bottler','Mobile bottling line'],['forklift','Forklift']];
+function work(FL,V,G,sz){
+  const D=FL.D,mk=K=>Object.fromEntries(K.map(([k])=>[k,new Float64Array(D)]));
+  const T=mk(TASKS),T0=mk(TASKS),E=mk(EQUIP),E0=mk(EQUIP);
+  const sortH={none:1,hand:2.5,optical:1.3}[G.sort]||2.5,grav=G.buildTier==='gravity',GPH=3000,perHr=G.bottlePerDay/8;
+  const put=(A,A0,key,d,h,k)=>{d=Math.floor(d);if(d<0||d>=D||!(h>0))return;A[key][d]+=h;if(k===0)A0[key][d]+=h};
+  const spread=(A,A0,key,a,b,h,k)=>{if(!(h>0))return;for(let d=Math.max(0,Math.floor(a));d<Math.min(D,Math.ceil(b));d++){const w=Math.min(b,d+1)-Math.max(a,d);if(w>0){A[key][d]+=h*w;if(k===0)A0[key][d]+=h*w}}};
+  for(let k=-3;k<=1;k++){const o=365*k;FL.lots.forEach(L=>{
+    const S=L.segs,red=L.color==='red',p=L.p+o;
+    put(T,T0,'crush',p,G.crushCrew*6+L.tons*(red?sortH:0.8),k);
+    put(E,E0,'crushline',p,red?L.crushHrs:0,k);put(E,E0,'forklift',p,L.bins*0.1,k);
+    if(red&&!grav)put(E,E0,'mustpump',p,L.mustGal/GPH+1,k);
+    const ps=S.find(s=>s.loc==='press');if(ps){put(E,E0,'press',ps.a+o,L.pressHrs,k);put(T,T0,'press',ps.a+o,2*L.pressHrs+2*L.loads,k)}
+    S.filter(s=>s.loc==='redTank').forEach(s=>{spread(T,T0,'cap',s.a+o,s.b+o,2*G.capHrs,k);spread(E,E0,'popump',s.a+o,s.b+o,0.5,k);spread(T,T0,'checks',s.a+o,s.b+o,0.25,k)});
+    if(!red)spread(T,T0,'checks',p+2,p+20,0.25,k);
+    const ws=S.filter(s=>!s.ev&&s.loc!=='bottled').sort((x,y)=>x.a-y.a);
+    for(let i=1;i<ws.length;i++){const fr=ws[i-1],to=ws[i],d=to.a+o;
+      put(E,E0,'xfer',d,grav&&to.loc==='barrel'?0.25:to.gal/GPH+0.5,k);put(T,T0,'moves',d,2+(fr.loc==='barrel'?0:2),k);
+      if(to.loc==='barrel')put(T,T0,'barrel',d,to.units*0.1,k);
+      if(fr.loc==='barrel'){put(E,E0,'washer',d,fr.units*0.15,k);put(T,T0,'barrel',d,fr.units*0.25,k)}}
+    S.filter(s=>s.loc==='barrel').forEach(s=>{spread(T,T0,'barrel',s.a+o,s.b+o,s.units*1.5/365,k);
+      if(s.b-s.a>120){const m=(s.a+s.b)/2+o;put(T,T0,'barrel',m,s.units*0.4,k);put(E,E0,'xfer',m,s.units*BBL/GPH+1,k);put(E,E0,'washer',m,s.units*0.15,k)}});
+    S.filter(s=>s.loc==='storage').forEach(s=>spread(T,T0,'moves',s.a+o,s.b+o,s.units*20/365,k));
+    const bot=L.bottle+o,bd=Math.max(1,Math.ceil(L.wineCases/G.bottlePerDay-1e-9)),lh=L.cases/perHr;
+    spread(T,T0,'bottling',bot,bot+bd,(6*lh+4/L.n)/bd,k);spread(E,E0,'bottler',bot,bot+bd,lh/bd,k);spread(E,E0,'forklift',bot,bot+bd,L.cases/56*0.1/bd,k);
+    put(T,T0,'moves',bot,2,k);
+    spread(T,T0,'cases',L.release+o,L.release+o+365,L.cases*0.03/365,k);
+  })}
+  const inst=sz&&sz.barrels||0,active=new Uint8Array(D);
+  for(let d=0;d<D;d++){active[d]=FL.lanes.redTank[d]+FL.lanes.whiteTank[d]>0?1:0;
+    const empty=Math.max(0,inst-FL.ves.barrel[d])*0.1/42, g=(active[d]?6:G.generalHrs/7)+empty;
+    T.general[d]+=g;T0.general[d]+=g}
+  const units={crushline:1,press:1,mustpump:grav?0:1,popump:Math.max(1,Math.ceil((sz&&sz.nRed||4)/4)),xfer:(sz&&sz.allTons>60)?2:1,washer:inst?1:0,bottler:1,forklift:1};
+  return {T,T0,E,E0,active,units};
+}
+
+
+let V=deepCopy(VDEF), G=deepCopy(GDEF), M=null, finView='cash', tab='money', FL=null, rng='harvest', cur=75, unit='gal';
+const TCOL={crush:'light-dark(#6f7a2a,#bcc86a)',press:'light-dark(#8c7a66,#b7a593)',cap:'var(--wine)',checks:'light-dark(#c2577a,#e892ad)',moves:'var(--loan)',barrel:'var(--oak)',bottling:'var(--good)',cases:'light-dark(#2f8f8a,#7fd0c9)',general:'light-dark(#9a9a94,#6f6f69)'};
+const LCOL={pad:'light-dark(#6f7a2a,#bcc86a)',press:'light-dark(#8c7a66,#b7a593)',redTank:'var(--wine)',whiteTank:'light-dark(#a8820f,#e5c25a)',storage:'var(--loan)',blend:'light-dark(#4a5d8a,#9aaee0)',barrel:'var(--oak)',bottled:'var(--good)'};
+const fdate=d=>{const t=new Date(2001,7,1+Math.round(d)),y=t.getFullYear()-2001;return t.toLocaleDateString('en-US',{month:'short',day:'numeric'})+(y===0?', harvest year':y===1?', year after':`, harvest +${y}`)};
+const gal=v=>v>=1e4?(v/1000).toFixed(1)+'k':n0(v);
+function rangeOf(){return rng==='harvest'?[0,153]:rng==='year'?[0,365]:[0,Math.min(FL.D-1,Math.ceil(FL.end/30)*30)]}
+function lanesNow(u=unit){return u==='ves'?(rng==='vintage'?FL.ves0:FL.ves):(rng==='vintage'?FL.lanes0:FL.lanes)}
+const capOf=k=>unit==='ves'?FL.vcaps[k]:FL.caps[k];
+const uName=(k,n)=>UNIT[k][Math.round(n)===1?0:1];
+const fmtU=(k,v)=>unit==='ves'?(k==='bottled'?n0(v):(Math.round(v*10)/10).toString().replace(/\.0$/,'')):gal(v);
+function drawFlow(){
+  const s=$('sF'),W=s.clientWidth,H=s.clientHeight;if(!FL||!W)return;
+  const [d0,d1]=rangeOf(),Ls=lanesNow(),m={l:8,r:12,t:6,b:26},nl=LOCS.length,lh=(H-m.t-m.b)/nl;
+  const x=d=>m.l+(d-d0)/(d1-d0)*(W-m.l-m.r);let g='';
+  LOCS.forEach(([k,name],i)=>{
+    const y0=m.t+i*lh,a=Ls[k],cap=capOf(k);let pk=0;for(let d=d0;d<d1;d++)pk=Math.max(pk,a[d]);
+    const top=Math.max(pk,cap||0)*1.15||1,yv=v=>y0+lh-4-v/top*(lh-22);
+    g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y0+lh-4}" y2="${y0+lh-4}" stroke="var(--rule)"/>`;
+    let p=`M${x(d0)},${yv(0)}`;for(let d=d0;d<d1;d++){const yy=yv(a[Math.min(d,FL.D-1)]).toFixed(1);p+=`L${x(d).toFixed(1)},${yy}L${x(d+1).toFixed(1)},${yy}`}p+=`L${x(d1)},${yv(0)}Z`;
+    g+=`<path d="${p}" fill="${LCOL[k]}" fill-opacity="0.75"/>`;
+    if(cap){let o='',on=false;for(let d=d0;d<=d1;d++){const v=a[Math.min(d,FL.D-1)];if(v>cap){o+=(on?'L':'M')+x(d).toFixed(1)+','+yv(v).toFixed(1);on=true}else if(on){o+=`L${x(d).toFixed(1)},${yv(cap)}`;on=false}}
+      if(o){let poly='';const segs=o.split('M').filter(Boolean);segs.forEach(sg=>{const pts=sg.split('L');const xs=pts.map(q=>q.split(',')[0]);poly+=`M${pts[0]}L${pts.slice(1).join('L')}${pts.length?`L${xs[xs.length-1]},${yv(cap)}L${xs[0]},${yv(cap)}Z`:''}`});g+=`<path d="${poly}" fill="var(--bad)"/>`}
+      g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${yv(cap)}" y2="${yv(cap)}" stroke="var(--ink)" stroke-dasharray="5 4" stroke-width="1.2"/>`}
+    g+=`<text x="${m.l+4}" y="${y0+13}" font-size="13" font-weight="600" fill="var(--ink)">${name}</text><text x="${W-m.r-4}" y="${y0+13}" font-size="12" text-anchor="end" fill="${cap&&pk>cap?'var(--bad)':'var(--mute)'}">${unit==='ves'?`peak ${fmtU(k,pk)}${cap?` of ${n0(cap)}`:''} ${uName(k,cap||pk)}${FL.size[k]?` (${n0(FL.size[k])} gal)`:''}${k==='pad'||k==='press'?' a day':''}`:`peak ${gal(pk)} gal${cap?` of ${gal(cap)}`:k==='pad'||k==='press'?' a day':''}`}</text>`;
+  });
+  const step=rng==='harvest'?1:rng==='year'?1:3;
+  for(let mo=0;mo<60;mo+=step){const d=Math.round((new Date(2001,7+mo,1)-new Date(2001,7,1))/864e5);if(d<d0||d>d1)continue;const t=new Date(2001,7+mo,1);
+    g+=`<line x1="${x(d)}" x2="${x(d)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--rule)" stroke-opacity="0.6"/><text x="${x(d)+3}" y="${H-8}" font-size="12" fill="var(--mute)">${t.toLocaleDateString('en-US',{month:'short'})}${t.getMonth()<step||mo===0?" '"+String(t.getFullYear()-2001+26).padStart(2,'0'):''}</text>`}
+  g+=`<line class="cur" data-x0="${m.l}" data-x1="${W-m.r}" x1="${x(cur)}" x2="${x(cur)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink)" stroke-width="2"/>`;
+  s.innerHTML=g;
+  const sc=$('scrub');sc.min=d0;sc.max=d1;sc.value=cur;
+  drawGantt(d0,d1);drawWork(d0,d1);snap();
+}
+function drawWork(d0,d1){
+  const own=G.facility==='build'&&M.lbr;$('workBlock').hidden=!own;if(!own)return;
+  const W=M.lbr.WK,Tt=rng==='vintage'?W.T0:W.T,Ee=rng==='vintage'?W.E0:W.E,av=M.lbr.avail;
+  // labor: stacked step areas
+  let s=$('sL'),Wd=s.clientWidth,H=s.clientHeight,m={l:40,r:12,t:8,b:24};if(!Wd)return;
+  const x=d=>m.l+(d-d0)/(d1-d0)*(Wd-m.l-m.r);let top=1;const tot=new Float64Array(d1-d0+1);
+  for(let d=d0;d<=d1;d++){let t=0;TASKS.forEach(([k])=>t+=Tt[k][Math.min(d,FL.D-1)]);tot[d-d0]=t;top=Math.max(top,t,rng==='vintage'?0:av[d%365])}
+  top*=1.1;const yv=v=>H-m.b-v/top*(H-m.t-m.b);let g='';
+  const step=top>60?20:top>30?10:5;for(let v=0;v<=top;v+=step)g+=`<line x1="${m.l}" x2="${Wd-m.r}" y1="${yv(v)}" y2="${yv(v)}" stroke="var(--rule)"/><text x="${m.l-6}" y="${yv(v)+4}" font-size="11" text-anchor="end" fill="var(--mute)">${v}</text>`;
+  const base=new Float64Array(d1-d0+1);
+  TASKS.forEach(([k])=>{let up='',dn='';for(let d=d0;d<d1;d++){const i=d-d0,v=Tt[k][Math.min(d,FL.D-1)],y0=yv(base[i]),y1=yv(base[i]+v);up+=`${i?'L':'M'}${x(d).toFixed(1)},${y1.toFixed(1)}L${x(d+1).toFixed(1)},${y1.toFixed(1)}`;dn=`L${x(d+1).toFixed(1)},${y0.toFixed(1)}L${x(d).toFixed(1)},${y0.toFixed(1)}`+dn;base[i]+=v}
+    g+=`<path d="${up}${dn}Z" fill="${TCOL[k]}" fill-opacity="0.85"/>`});
+  if(rng!=='vintage'){let p='';for(let d=d0;d<d1;d++){const y=yv(av[d%365]).toFixed(1);p+=`${d===d0?'M':'L'}${x(d).toFixed(1)},${y}L${x(d+1).toFixed(1)},${y}`}g+=`<path d="${p}" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-dasharray="5 4"/>`}
+  g+=`<line class="cur" data-x0="${m.l}" data-x1="${Wd-m.r}" x1="${x(cur)}" x2="${x(cur)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink)" stroke-width="2"/>`+axisM(x,d0,d1,H-6);
+  s.innerHTML=g;
+  $('laborLegend').innerHTML=TASKS.map(([k,n])=>`<span><i style="background:${TCOL[k]}"></i>${n}</span>`).join('')+(rng==='vintage'?'':`<span><i style="background:var(--ink);height:2px"></i>Crew on hand (dashed)</span>`);
+  const L=M.lbr;$('laborLede').textContent=`Busiest day about ${n0(L.peakDay)} hours. Harvest (any ferment running) lasts about ${L.harvestWeeks.toFixed(1)} weeks. Crew: ${G.owner==='hire'?'the winemaker':'you as winemaker'}${L.perms?`, ${L.perms} full-time`:''}${L.partHrs>0?`, ${n0(L.partHrs)} part-time hours`:''}, and ${L.seasonalHeads} seasonal at harvest, sized to the busiest week. Days above the dashed line are long days or catch-up.`;
+  // equipment lanes
+  s=$('sE');Wd=s.clientWidth;H=s.clientHeight;const nl=EQUIP.length,lh=(H-m.t-m.b)/nl,xe=d=>8+(d-d0)/(d1-d0)*(Wd-8-12);g='';
+  EQUIP.forEach(([k,name],i)=>{const y0=m.t+i*lh,a=Ee[k],u=W.units[k];let pk=0,yr=0;for(let d=d0;d<d1;d++)pk=Math.max(pk,a[Math.min(d,FL.D-1)]);for(let d=0;d<365;d++)yr+=W.E[k][d];
+    const cap=u*G.shiftHrs,tp=Math.max(pk,cap)*1.15||1,yv2=v=>y0+lh-4-v/tp*(lh-22);
+    g+=`<line x1="8" x2="${Wd-12}" y1="${y0+lh-4}" y2="${y0+lh-4}" stroke="var(--rule)"/>`;
+    let p=`M${xe(d0)},${yv2(0)}`;for(let d=d0;d<d1;d++){const y=yv2(a[Math.min(d,FL.D-1)]).toFixed(1);p+=`L${xe(d).toFixed(1)},${y}L${xe(d+1).toFixed(1)},${y}`}p+=`L${xe(d1)},${yv2(0)}Z`;
+    g+=`<path d="${p}" fill="${pk>cap?'var(--bad)':'var(--loan)'}" fill-opacity="0.75"/>`;
+    if(u)g+=`<line x1="8" x2="${Wd-12}" y1="${yv2(cap)}" y2="${yv2(cap)}" stroke="var(--ink)" stroke-dasharray="5 4" stroke-width="1.2"/>`;
+    g+=`<text x="12" y="${y0+13}" font-size="13" font-weight="600" fill="var(--ink)">${name}${u>1?` (${u})`:''}</text><text x="${Wd-16}" y="${y0+13}" font-size="12" text-anchor="end" fill="${pk>cap?'var(--bad)':'var(--mute)'}">${u?`peak ${pk.toFixed(1)} hrs/day, ${n0(yr)} hrs a year`:'none installed'}</text>`});
+  g+=`<line class="cur" data-x0="8" data-x1="${Wd-12}" x1="${xe(cur)}" x2="${xe(cur)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink)" stroke-width="2"/>`+axisM(xe,d0,d1,H-6);
+  s.innerHTML=g;
+}
+function axisM(x,d0,d1,y){let g='';const st=rng==='vintage'?3:1;for(let mo=0;mo<60;mo+=st){const d=Math.round((new Date(2001,7+mo,1)-new Date(2001,7,1))/864e5);if(d<d0||d>d1)continue;const t=new Date(2001,7+mo,1);g+=`<text x="${x(d)+3}" y="${y}" font-size="12" fill="var(--mute)">${t.toLocaleDateString('en-US',{month:'short'})}</text>`}return g}
+function drawGantt(d0,d1){
+  const s=$('sG'),W=s.clientWidth;if(!W)return;const L=FL.lots,rh=20,lab=150,m={t:6,r:12};
+  const H=m.t+L.length*rh+8;s.parentNode.style.minHeight=H+'px';
+  const x=d=>lab+(Math.max(d0,Math.min(d1,d))-d0)/(d1-d0)*(W-lab-m.r);let g='';
+  L.forEach((l,i)=>{const y=m.t+i*rh;g+=`<text x="4" y="${y+14}" font-size="13" fill="var(--ink)">${l.name}${l.n>1?' '+(l.j+1):''}</text>`;
+    l.segs.forEach(sg=>{if(sg.b<d0||sg.a>d1)return;const w=Math.max(sg.ev?3:1,x(sg.b)-x(sg.a));g+=`<rect x="${x(sg.a)}" y="${y+3}" width="${w}" height="${rh-6}" fill="${LCOL[sg.loc]}"><title>${LOCS.find(q=>q[0]===sg.loc)[1]}: ${fdate(sg.a)} to ${fdate(sg.b)}</title></rect>`})});
+  g+=`<line class="cur" data-x0="${lab}" data-x1="${W-m.r}" x1="${x(cur)}" x2="${x(cur)}" y1="0" y2="${H}" stroke="var(--ink)" stroke-width="2"/>`;
+  s.innerHTML=g;
+}
+function snap(){
+  const Ls=lanesNow(),d=Math.max(0,Math.min(FL.D-1,cur)),ago=['this vintage','last vintage','two vintages back','three vintages back'];
+  const here={};LOCS.forEach(([k])=>here[k]={});
+  for(let k=-3;k<=1;k++){if(rng==='vintage'&&k!==0)continue;FL.lots.forEach(l=>l.segs.forEach(sg=>{if(sg.loc==='bottled')return;const a=sg.a+365*k,b=sg.b+365*k;if(d>=Math.floor(a)&&d<Math.ceil(b)){const key=`${l.name}, ${k>0?'next vintage':ago[-k]}`;here[sg.loc][key]=(here[sg.loc][key]||0)+1}}))}
+  const LG=lanesNow('gal'),LV=lanesNow('ves');
+  $('snap').innerHTML=`<h3>${fdate(d)}</h3><div class="dlab" style="margin-bottom:6px">${rng==='vintage'?'This vintage only':'Every vintage in the building that day'}</div>`+LOCS.map(([k,name])=>{
+    const v=LG[k][d],n=LV[k][d],cap=FL.vcaps[k],lots=Object.entries(here[k]).map(([nm,ct])=>`${nm}${ct>1?` (${Math.round(ct)} lots)`:''}`);
+    const nn=k==='bottled'?n0(n):Math.round(n*10)/10;
+    const use=v?(cap?`${nn} of ${n0(cap)} ${uName(k,cap)}`:`${nn} ${uName(k,n)}`):'';
+    return `<div class="row${cap&&n>cap+1e-6?' over':''}"><i style="background:${LCOL[k]}"></i><span>${name}</span><b>${v?gal(v)+' gal':'empty'}${use?' · '+use:''}</b>${v&&lots.length&&k!=='bottled'?`<small>${lots.join('; ')}</small>`:''}</div>`}).join('')+workSnap(d);
+}
+function workSnap(d){if(!(G.facility==='build'&&M.lbr))return'';const W=M.lbr.WK,Tt=rng==='vintage'?W.T0:W.T,Ee=rng==='vintage'?W.E0:W.E;
+  const tk=TASKS.map(([k,n])=>[n,Tt[k][d]]).filter(x=>x[1]>0.05).sort((a,b)=>b[1]-a[1]),tot=tk.reduce((a,x)=>a+x[1],0);
+  const eq=EQUIP.map(([k,n])=>[n,Ee[k][d],W.units[k]]).filter(x=>x[1]>0.05);
+  return `<h3 style="margin-top:14px">Work that day</h3><div class="row"><i style="background:var(--ink)"></i><span>Cellar labor</span><b>${tot.toFixed(1)} hrs${rng==='vintage'?'':` of ${M.lbr.avail[d%365].toFixed(0)} on hand`}</b>${tk.length?`<small>${tk.map(([n,h])=>`${n} ${h.toFixed(1)}`).join('; ')}</small>`:''}</div>`+
+   (eq.length?eq.map(([n,h,u])=>`<div class="row${h>u*G.shiftHrs?' over':''}"><i style="background:var(--loan)"></i><span>${n}</span><b>${h.toFixed(1)} hrs</b></div>`).join(''):'<div class="row"><i></i><span>Equipment</span><b>idle</b></div>');
+}
+function flowLede(){
+  if(G.facility!=='build'){$('flowLede').textContent='Custom crush: this is your wine moving through someone else\'s cellar, so there is nothing to size and no capacity lines. Barrel counts still set how many barrels you buy.';return}
+  const S=M.sz,N=FL.need,mg=Math.round((G.designFactor-1)*100);
+  $('flowLede').textContent=`The equipment list is sized from this flow: the most vessels in use on any day of a normal year, plus the ${mg}% design margin. That gives ${S.nRed} red ferment tanks of ${n0(FL.size.redTank)} gallons, ${S.nW} white tanks of ${n0(FL.size.whiteTank)}, ${S.nS} lot tanks of ${n0(FL.size.storage)}, ${S.nB} blending tanks of ${n0(FL.size.blend)}, and ${n0(S.barrels)} barrels (peak ${n0(N.barrel.v)} in use plus spares). Each tank type is the smallest standard size that holds the largest lot. Lower the design margin under the assumptions to see where it breaks.`+Object.entries(FL.short).map(([i,mo])=>` ${V[i].name} bottles before its barrel time is up, so it only gets about ${Math.round(mo)} months in barrel; push its bottling later in the wine table.`).join('');
+}
+function renderFlow(){if(tab!=='flow')return;FL=M.FL;const S=M.sz;
+  FL.vcaps=G.facility==='build'?{redTank:S.nRed,whiteTank:S.nW,storage:S.nS,blend:S.nB,barrel:S.barrels}:{};
+  FL.caps={};for(const k in FL.vcaps)FL.caps[k]=FL.vcaps[k]*(k==='barrel'?59.4:FL.size[k]);
+  flowLede();drawFlow()}
+
+const $=id=>document.getElementById(id);
+const money=v=>{const a=Math.abs(v),s=v<0?'-':'';return a>=1e6?s+'$'+(a/1e6).toFixed(2)+'M':a>=1e4?s+'$'+Math.round(a/1e3)+'k':s+'$'+Math.round(a).toLocaleString()};
+const n0=v=>Math.round(v).toLocaleString();
+
+const decisions=[
+ ['fruit','Fruit',[['buy','Buy grapes'],['estate','Plant an estate vineyard']]],
+ ['facility','Production',[['build','Build a winery'],['custom','Custom crush']]],
+ ['tasting','Tasting room',[[true,'Yes'],[false,'No']]],
+ ['owner','Winemaker',[['winemaker','Owner makes the wine'],['hire','Hire a winemaker']]],
+ ['buildTier','Building style',[['shell','Metal building'],['custom','Custom production'],['gravity','Gravity-flow hillside']]],
+ ['storage','Bottled wine storage',[['onsite','On site'],['offsite','Off-site bonded']]],
+ ['lab','Lab work',[['outsource','Send it all out'],['basic','Basic in-house'],['full','Full in-house']]],
+ ['sort','Sorting',[['none','None'],['hand','Hand table'],['optical','Optical']]],
+ ['water','Vineyard water (estate fruit)',[['district','Irrigation district'],['well','Own well, right comes with land'],['buyRight','Dry land plus a bought water right']]],
+ ['ozone','Barrel and tank sanitizing',[[true,'Ozone plus hot water'],[false,'Hot water and SO2 only']]]
+];
+const buildOnly=['buildTier','storage','lab','sort','ozone'];
+$('decisions').innerHTML=decisions.map(([k,l,opts])=>`<div><div class="dlab">${l}</div><div class="seg">${opts.map(([v,t])=>`<button data-d="${k}" data-v="${v}">${t}</button>`).join('')}</div></div>`).join('');
+
+const wcols=[['cases','Cases/yr',100,20000,50],['price','Retail $/btl',10,300,1],['bottle','Months to bottling',2,60,1],['release','Months to release',3,72,1],['barrel','Months in barrel',0,36,1],['newOak','% new oak',0,100,5],['grape','Grapes $/ton',500,15000,50]];
+function renderWines(){
+  $('wines').innerHTML=`<thead><tr><th>Wine</th><th></th><th>Color</th>${wcols.map(c=>`<th>${c[1]}</th>`).join('')}<th>Tons</th></tr></thead><tbody>`+
+   V.map((v,i)=>`<tr><td><select data-i="${i}" data-f="name" aria-label="Variety">${varOpts(v.name)}</select></td><td><button data-rm="${i}" aria-label="Remove ${v.name}" title="Remove"${V.length<2?' disabled':''}>&times;</button></td><td><select data-i="${i}" data-f="color" aria-label="${v.name} color"><option value="white"${v.color==='white'?' selected':''}>white</option><option value="red"${v.color==='red'?' selected':''}>red</option></select></td>${wcols.map(([f,,mn,mx,st])=>`<td><input type="number" data-i="${i}" data-f="${f}" min="${mn}" max="${mx}" step="${st}" value="${v[f]}" aria-label="${v.name} ${f}"></td>`).join('')}<td>${(v.cases/v.cpt).toFixed(1)}</td></tr>`).join('')+
+   `<tr><td><b>Total</b></td><td></td><td></td><td><b>${n0(V.reduce((a,v)=>a+v.cases,0))}</b></td><td colspan="6"></td><td><b>${V.reduce((a,v)=>a+v.cases/v.cpt,0).toFixed(1)}</b></td></tr></tbody>`;
+}
+const VN=Object.keys(VARIETIES);
+const varOpts=sel=>['red','white'].map(col=>`<optgroup label="${col==='red'?'Reds':'Whites'}">`+VN.filter(n=>VARIETIES[n].color===col).map(n=>`<option${n===sel?' selected':''}>${n}</option>`).join('')+'</optgroup>').join('')+(VN.includes(sel)?'':`<option selected>${sel}</option>`);
+$('addVar').innerHTML=varOpts('Syrah');
+$('addWine').addEventListener('click',()=>{V.push({name:$('addVar').value,cases:500,...VARIETIES[$('addVar').value]});run()});
+$('wines').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(b&&V.length>1){V.splice(+b.dataset.rm,1);run()}});
+$('wines').addEventListener('change',e=>{const t=e.target,i=t.dataset.i,f=t.dataset.f;if(i===undefined)return;if(f==='name'){V[i]={name:t.value,cases:V[i].cases,...VARIETIES[t.value]};run();return}V[i][f]=f==='color'?t.value:Math.max(+t.min,Math.min(+t.max,+t.value||0));if(V[i].bottle==null)V[i].bottle=bottleOf(V[i]);if(f==='bottle'&&V[i].release<V[i].bottle)V[i].release=V[i].bottle;if(f==='release'&&V[i].bottle>V[i].release)V[i].bottle=V[i].release;run(true)});
+
+const groups=[
+ ['Land and building',[['landAcre','Irrigated farmland',3000,150000,500,v=>money(v)+'/acre'],['dryLandAcre','Dry, ranch or scrub land',500,20000,250,v=>money(v)+'/acre'],['plantablePct','Plantable share of vineyard ground',50,95,1,v=>v+'%'],['siteCoverage','Buildings as share of the winery site',3,40,1,v=>v+'%'],['minParcel','Zoning minimum parcel',0,80,1,v=>v?v+' acres':'none'],['rawPrepAcre','Clearing raw ground for planting',0,6000,100,v=>money(v)+'/acre'],['landGrowth','Land appreciation',0,6,0.5,v=>v+'%/yr'],['trSqft','Tasting room size',500,6000,100,v=>n0(v)+' sq ft'],['sfPerKgal','Fermentation hall per 1,000 gal of tanks',15,70,1,v=>v+' sq ft'],['sfPerBarrel','Barrel room per barrel',1.5,8,0.5,v=>v+' sq ft'],['sfPerCaseStored','Case storage per bottled case',0.05,0.4,0.01,v=>v.toFixed(2)+' sq ft'],['permitPct','Permits',0,3,0.25,v=>v+'% of construction'],['trFitout','Leased tasting room fit-out',50000,1000000,10000,money]]],
+ ['Vineyard',[['vineDevAcre','Development cost, excluding irrigation',15000,80000,1000,v=>money(v)+'/acre'],['farmAcre','Farming cost',2000,12000,250,v=>money(v)+'/acre/yr']]],
+ ['Equipment and barrels',[['jacketGal','Jacketed tank cost at 1,000 gal',4,20,0.5,v=>'$'+v+'/gal'],['storageGal','Storage tank cost at 1,000 gal',3,15,0.5,v=>'$'+v+'/gal'],['hoseFt','2" wine hose',5,60,1,v=>'$'+v+'/ft'],['designFactor','Design margin over peak vessels in use',0.7,1.5,0.05,v=>'+'+Math.round((v-1)*100)+'%'],['barrelNew','New barrel',600,2000,25,v=>'$'+v],['barrelUsed','Used barrel',100,800,25,v=>'$'+v],['lotsPerTank','Lots of one wine sharing a lot tank after press',1,4,1,v=>v===1?'kept separate':v+' lots'],['barrelSpare','Spare barrels over peak',1,1.2,0.01,v=>'+'+Math.round((v-1)*100)+'%']]],
+ ['Production',[['suppliesCase','Cellar supplies (yeast, SO2, chemicals)',2,25,0.5,v=>'$'+v+'/case'],['customCase','Custom crush fee',20,120,1,v=>'$'+v+'/case'],['bottlePer','Dry goods per bottle',1,8,0.1,v=>'$'+v.toFixed(2)],['carton','Carton',1,6,0.1,v=>'$'+v.toFixed(2)],['bottling','Mobile bottling',1,8,0.25,v=>'$'+v.toFixed(2)+'/case']]],
+ ['People',[['ownerSalary','Owner salary as winemaker',0,250000,5000,money],['wmSalary','Hired winemaker salary',60000,250000,5000,money],['burden','Payroll burden',10,40,1,v=>v+'%'],['trStaff','Tasting room staff',0,500000,10000,v=>money(v)+'/yr'],['adminCost','Admin, compliance, accounting',0,250000,5000,v=>money(v)+'/yr']]],
+ ['Labor',[['cellarWage','Cellar worker wage',17.13,40,0.25,v=>'$'+v.toFixed(2)+'/hr'],['seasonalWage','Harvest worker wage',17.13,35,0.25,v=>'$'+v.toFixed(2)+'/hr'],['seasonalBurden','Seasonal payroll burden',5,30,1,v=>v+'%'],['bottlePerDay','Mobile bottling line',400,3000,100,v=>n0(v)+' cases/day'],['crushCrew','Crew on a crush day',2,10,1,v=>v+' people'],['capHrs','Per pumpover or punchdown',0.1,1,0.05,v=>v.toFixed(2)+' hr'],['generalHrs','General cellar work off-season',0,60,1,v=>v+' hr/week'],['wmHarvestHrs','Winemaker hands-on, harvest',0,70,1,v=>v+' hr/week'],['wmCellarHrs','Winemaker hands-on, rest of year',0,40,1,v=>v+' hr/week'],['permHarvestHrs','Full-time crew hours in harvest',40,70,1,v=>v+' hr/week']]],
+ ['Overhead',[['utilBase','Utilities base',0,80000,1000,money],['insurePct','Insurance',0,2,0.1,v=>v+'% of capital'],['maintPct','Maintenance',0,4,0.1,v=>v+'% of build and equipment'],['marketingPct','Marketing',0,15,0.5,v=>v+'% of revenue'],['dtcFeePct','Card and DTC fees',0,6,0.5,v=>v+'%'],['trLease','Tasting room lease (custom crush)',0,200000,5000,v=>money(v)+'/yr']]],
+ ['Water',[['dripAcre','Drip and filtration',1000,8000,100,v=>money(v)+'/acre'],['afPerAcre','Vineyard water use',0.5,4,0.1,v=>v.toFixed(1)+' acre-ft/acre/yr'],['districtAcre','Irrigation district assessment',0,500,10,v=>'$'+v+'/acre/yr'],['waterRightAF','Water right price',500,10000,100,v=>money(v)+'/acre-ft'],['rightTransfer','Water right transfer work',0,100000,2500,money],['irrWellDepth','Irrigation well depth',100,1200,25,v=>v+' ft'],['irrWellFt','Irrigation well drilling',30,200,5,v=>'$'+v+'/ft'],['liftFt','Pumping lift',50,1000,25,v=>v+' ft'],['kwh','Power',0.04,0.25,0.005,v=>'$'+v.toFixed(3)+'/kWh'],['wineryWellDepth','Winery well depth',50,1000,25,v=>v+' ft'],['wineryWellFt','Winery well drilling',20,120,1,v=>'$'+v+'/ft'],['waterRatio','Process water',1,10,0.5,v=>v+' gal per gal of wine']]],
+ ['Excise tax',[['fedExcise','Federal rate before credit',0.5,2,0.01,v=>'$'+v.toFixed(2)+'/gal'],['waTaxL','Washington wine tax',0,0.6,0.0001,v=>'$'+v.toFixed(4)+'/liter'],['waShare','Direct sales to Washington residents',0,100,5,v=>v+'%']]],
+ ['Storage, tax and lab',[['propTaxPct','Property tax',0,2,0.05,v=>v.toFixed(2)+'% of land, building, equipment'],['offsiteCaseMonth','Off-site storage',0.1,1,0.05,v=>'$'+v.toFixed(2)+'/case/month'],['offsiteInOut','Off-site handling',0,3,0.25,v=>'$'+v.toFixed(2)+'/case in or out'],['offsiteAdmin','Off-site bond admin',0,10000,250,v=>money(v)+'/yr'],['lotTons','Tons per lot',1,20,1,v=>v+' tons'],['testsPerLot','Analyses per lot per year',3,40,1,v=>v],['testExt','Outside lab price',10,100,1,v=>'$'+v+'/analysis'],['labWage','Lab time',15,60,1,v=>'$'+v+'/hr']]],
+ ['Sales',[['clubDisc','Club discount',0,30,1,v=>v+'%'],['wholesaleFactor','Wholesale price',30,70,1,v=>v+'% of retail']]],
+ ['Financing',[['loanLTV','Loan share of startup capital',0,90,5,v=>v+'%'],['loanRate','Interest rate',3,12,0.25,v=>v+'%'],['loanTerm','Term',5,30,1,v=>v+' years'],['reserve','Minimum cash reserve',25000,1000000,25000,money],['distPct','Share of excess cash distributed',0,100,5,v=>v+'%'],['discount','Discount rate for NPV',3,15,0.5,v=>v+'%']]]
+];
+const fmt={};
+$('groups').innerHTML=groups.map(([g,cs])=>`<fieldset><legend>${g}</legend>`+cs.map(([k,l,mn,mx,st,f])=>{fmt[k]=f;return `<div class="ctl" id="c_${k}"><label for="i_${k}">${l}</label><output id="o_${k}"></output><input type="range" id="i_${k}" min="${mn}" max="${mx}" step="${st}"></div>`}).join('')+`</fieldset>`).join('')+
+ `<fieldset><legend>Channel mix</legend><p class="dlab">With a tasting room: ${G.shareTR[0]}% tasting room, ${G.shareTR[1]}% club, ${G.shareTR[2]}% wholesale. Without: ${G.shareNoTR[0]}%, ${G.shareNoTR[1]}%, ${G.shareNoTR[2]}%. Brand ramp from first release: ${G.ramp.join(', ')}% of target.</p><button id="reset">Reset all assumptions</button></fieldset>`;
+$('groups').addEventListener('input',e=>{const k=e.target.id&&e.target.id.slice(2);if(k in fmt){G[k]=+e.target.value;run()}});
+
+function card(f,label){
+  const y=v=>v==null?'not within 20 years':'year '+v;
+  return `<h3>${label}</h3><div class="sub">${f.loanAmt?money(f.loanAmt)+' loan at '+G.loanRate+'%, '+G.loanTerm+' years':'no debt'}</div>
+  <div class="big">${money(f.equityTot)}</div><div class="sub">owner capital put in over the life of the plan</div>
+  <div class="row"><span>Profitable every year from</span><span>${y(f.firstProfit)}</span></div>
+  <div class="row"><span>Owner's cash fully back</span><span>${y(f.payback)}</span></div>
+  <div class="row"><span>Owner payout, years 11 to 20</span><span>${money(f.avgPayout)}/yr</span></div>
+  <div class="row"><span>20-year IRR with ending value</span><span>${f.irr==null?'n/a':(f.irr*100).toFixed(1)+'%'}</span></div>
+  <div class="row"><span>NPV at ${G.discount}%</span><span class="${f.npv<0?'neg':'pos'}">${money(f.npv)}</span></div>
+  ${f.loanAmt?`<div class="row"><span>Weakest debt coverage once selling</span><span class="${f.minDscr<1.25?'neg':''}">${f.minDscr==null?'n/a':f.minDscr.toFixed(2)+'x'}</span></div>`:''}`;
+}
+function drawJ(){
+  const s=$('sJ'),W=s.clientWidth,H=s.clientHeight;if(!M||!W)return;
+  const nar=W<520,m={l:nar?48:62,r:14,t:16,b:30},Y=G.years;
+  const series=[['cash','var(--wine)'],['loan','var(--loan)']].filter(([k])=>k==='cash'||M.fin.loan.loanAmt>0);
+  const all=series.flatMap(([k])=>M.fin[k].out.map(o=>o.cum));
+  let lo=Math.min(0,...all),hi=Math.max(0,...all);const pad=(hi-lo)*0.08||1;lo-=pad;hi+=pad;
+  const x=y=>m.l+y/Y*(W-m.l-m.r), yv=v=>m.t+(1-(v-lo)/(hi-lo))*(H-m.t-m.b);
+  let g='';const step=(hi-lo)/5;
+  for(let i=0;i<=5;i++){const v=lo+i*step;g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${yv(v)}" y2="${yv(v)}" stroke="var(--rule)"/><text x="${m.l-6}" y="${yv(v)+4}" text-anchor="end" font-size="12" fill="var(--mute)">${money(v)}</text>`}
+  g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${yv(0)}" y2="${yv(0)}" stroke="var(--mute)" stroke-width="1.5"/>`;
+  for(let y=0;y<=Y;y+=nar?5:2)g+=`<text x="${x(y)}" y="${H-10}" text-anchor="middle" font-size="12" fill="var(--mute)">${y===0?'build':'yr '+y}</text>`;
+  series.forEach(([k,c])=>{const o=M.fin[k].out;g+=`<path d="${o.map((p,i)=>(i?'L':'M')+x(p.y).toFixed(1)+','+yv(p.cum).toFixed(1)).join('')}" fill="none" stroke="${c}" stroke-width="3"/>`;
+    const lowI=o.reduce((b,p,i)=>p.cum<o[b].cum?i:b,0);g+=`<circle cx="${x(o[lowI].y)}" cy="${yv(o[lowI].cum)}" r="5" fill="${c}"/><text x="${x(o[lowI].y)+8}" y="${yv(o[lowI].cum)+(k==='cash'?16:-8)}" font-size="13" fill="${c}">deepest ${money(o[lowI].cum)}</text>`;
+    const pb=M.fin[k].payback;if(pb!=null)g+=`<circle cx="${x(pb)}" cy="${yv(o[pb].cum)}" r="5" fill="var(--bg)" stroke="${c}" stroke-width="2"/>`});
+  s.innerHTML=g;
+}
+function drawY(){
+  const s=$('sY'),W=s.clientWidth,H=s.clientHeight;if(!M||!W)return;
+  const nar=W<520,m={l:nar?48:62,r:nar?44:56,t:14,b:28},Y=G.years,R=M.rows;
+  const top=Math.max(...R.map(r=>Math.max(r.rev,r.prodCash+r.opex+r.capex)))*1.08||1;
+  const invTop=Math.max(...R.map(r=>r.inv))*1.1||1;
+  const bw=(W-m.l-m.r)/(Y+1), x=y=>m.l+y*bw, yv=v=>m.t+(1-v/top)*(H-m.t-m.b), yi=v=>m.t+(1-v/invTop)*(H-m.t-m.b);
+  let g='';[0,top/2.16,top/1.08].forEach(v=>g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${yv(v)}" y2="${yv(v)}" stroke="var(--rule)"/><text x="${m.l-6}" y="${yv(v)+4}" text-anchor="end" font-size="12" fill="var(--mute)">${money(v)}</text>`);
+  [0,invTop/2.2,invTop/1.1].forEach(v=>g+=`<text x="${W-m.r+6}" y="${yi(v)+4}" font-size="12" fill="var(--oak)">${v>=1000?(v/1000).toFixed(1).replace('.0','')+'k':Math.round(v)}</text>`);
+  const capTop=Math.min(...R.map(r=>yv(r.prodCash+r.opex+r.capex)));
+  R.forEach(r=>{const x0=x(r.y)+bw*0.12,w=bw*0.36;
+    g+=`<rect x="${x0}" y="${yv(r.rev)}" width="${w}" height="${yv(0)-yv(r.rev)}" fill="var(--good)"/>`;
+    let b=0;[[r.prodCash,'var(--wine)'],[r.opex,'var(--mute)'],[r.capex,'var(--bad)']].forEach(([v,c])=>{if(v<=0)return;const h=Math.min(yv(b)-yv(b+v),H);g+=`<rect x="${x0+w+2}" y="${Math.max(m.t,yv(b+v))}" width="${w}" height="${Math.max(0,yv(b)-Math.max(m.t,yv(b+v)))}" fill="${c}"/>`;b+=v});
+    if(r.y%(nar?5:2)===0)g+=`<text x="${x(r.y)+bw/2}" y="${H-10}" text-anchor="middle" font-size="12" fill="var(--mute)">${r.y===0?'0':r.y}</text>`});
+  if(R[0].capex>top*0.9)g+=`<text x="${x(0)+bw}" y="${m.t+12}" font-size="12" fill="var(--bad)">year 0 capital ${money(R[0].capex)}, clipped</text>`;
+  g+=`<path d="${R.map((r,i)=>(i?'L':'M')+(x(r.y)+bw/2).toFixed(1)+','+yi(r.inv).toFixed(1)).join('')}" fill="none" stroke="var(--oak)" stroke-width="2.5"/>`;
+  s.innerHTML=g;
+}
+function years(){
+  const F=M.fin[finView].out,R=M.rows,cls=v=>v<0?' class="neg"':'';
+  const cols=[['Year',r=>r.y===0?'0 build':r.y],['Cases sold',r=>n0(r.sold)],['Inventory',r=>n0(r.inv)],['Revenue',r=>money(r.rev)],['Cost of goods',r=>money(r.cogs)],['Operating costs',r=>money(r.opex)],['EBITDA',r=>money(r.ebitda),r=>r.ebitda],['Capital',r=>money(r.capex)],['Debt service',(r,f)=>money(f.interest+f.principal)],['Owner in',(r,f)=>f.equity?money(-f.equity):''],['Owner out',(r,f)=>f.dist+f.ownerSal?money(f.dist+f.ownerSal):''],['Owner cumulative',(r,f)=>money(f.cum),(r,f)=>f.cum],['Cash',(r,f)=>money(f.cash)]];
+  $('years').innerHTML=`<thead><tr>${cols.map(c=>`<th>${c[0]}</th>`).join('')}</tr></thead><tbody>`+R.map((r,i)=>`<tr>${cols.map(c=>{const v=c[2]?c[2](r,F[i]):0;return `<td${cls(v)}>${c[1](r,F[i])}</td>`}).join('')}</tr>`).join('')+'</tbody>';
+}
+function implied(){
+  const m=M,lines={};m.capLines.forEach(c=>lines[c.label]=(lines[c.label]||0)+c.amt);
+  const own=G.facility==='build';
+  $('impliesLede').textContent=`${n0(m.totCases)} cases from ${m.allTons.toFixed(1)} tons a year. `+(G.fruit==='estate'?`${m.acres.toFixed(1)} vineyard acres, first crop year 3, full crop year 5, with bought fruit filling the gap. `:'All fruit bought on contract. ')+(own?`A ${n0(m.bld.sqft)} sq ft ${m.bld.T.name.toLowerCase()}${G.tasting?' with tasting room':''}, ${money(m.bld.total)} all in. `:`No winery: production at a custom crush facility${G.tasting?', with a leased tasting room':''}. `)+`Total capital over the plan: ${money(m.capexTotal)}.`;
+  const hdr=t=>`<tr><td colspan="5" style="padding-top:16px"><b>${t}</b></td></tr>`;
+  let eq='';
+  if(own){
+    const b=m.bld;
+    eq+=hdr(`Building: ${b.T.name}, design and engineering ${b.T.design}% of construction, site work ${b.T.site}%`);
+    eq+=b.spaces.map(s=>`<tr><td>${s.k}</td><td>${n0(s.sf)} sq ft</td><td>$${s.rate}/sq ft</td><td>${money(s.build+s.design)}</td><td>${money(s.build)} build plus ${money(s.design)} design. ${s.why}</td></tr>`).join('');
+    eq+=`<tr><td>Site work and excavation</td><td></td><td></td><td>${money(b.site)}</td><td>${G.buildTier==='gravity'?'cut into the slope for three working levels, retaining walls, larger site':'grading, utilities, paving'}</td></tr><tr><td>Permits</td><td></td><td></td><td>${money(b.permits)}</td><td>${G.permitPct}% of construction</td></tr>`;
+    const cats=[...new Set(m.sz.items.map(i=>i.cat))];
+    cats.forEach(ct=>{const its=m.sz.items.filter(i=>i.cat===ct);eq+=hdr(`${ct}: ${money(its.reduce((a,i)=>a+i.cost,0))}`)+its.map(i=>`<tr><td>${i.k}</td><td>${n0(i.n)}${i.unit==='ft'?' ft':''}</td><td>${i.unit==='ft'?'$'+i.each.toFixed(0)+'/ft':i.unit}</td><td>${money(i.cost)}</td><td>${i.why}</td></tr>`).join('')});
+  }
+  const L=m.lab;
+  eq+=hdr(`Lab program: ${L.name}, ${money(L.cost)} a year`)+`<tr><td>Lots and analyses</td><td>${L.lots} lots</td><td>${n0(L.tests)} a year</td><td></td><td>${n0(L.inTests)} run in-house, ${n0(L.outTests)} sent out at $${G.testExt}${own?'':'; the custom crush fee covers about half of routine panels'}</td></tr>`;
+  const r8=m.rows[Math.min(8,m.rows.length-1)].fixed;
+  const LD=m.LD;if(LD.bought>0){eq+=hdr(`Land: ${LD.bought.toFixed(1)} acres at ${money(LD.priceAcre)}/acre, ${money(LD.bought*LD.priceAcre)}`)+
+   (LD.planted?`<tr><td>Planted vineyard</td><td>${LD.planted.toFixed(1)} acres</td><td></td><td></td><td>tons needed divided by tons per acre, wine by wine</td></tr><tr><td>Roads, headlands, unplantable ground</td><td>${LD.unplantable.toFixed(1)} acres</td><td></td><td></td><td>only ${G.plantablePct}% of vineyard ground gets planted</td></tr>`:'')+
+   (LD.siteAcres?`<tr><td>Winery site</td><td>${LD.siteAcres.toFixed(1)} acres</td><td></td><td></td><td>${n0(m.bld.sqft)} sq ft of building at ${G.siteCoverage}% site coverage (parking, crush pad apron, septic and wastewater, setbacks)${G.buildTier==='gravity'?', half again more for a hillside':''}</td></tr>`:'')+
+   (LD.spare>0.05?`<tr><td>Spare land</td><td>${LD.spare.toFixed(1)} acres</td><td></td><td></td><td>bought only because of the ${G.minParcel}-acre zoning minimum; it holds value and counts in the ending value, but earns nothing here</td></tr>`:'')+
+   `<tr><td>Price basis</td><td></td><td></td><td></td><td>${G.fruit==='estate'&&G.water!=='buyRight'?'irrigated farmland, since the vineyard uses water that comes with the land':'dry, ranch or scrub land, since nothing here needs the land\'s own water right'+(G.fruit==='estate'?`; clearing it for planting adds ${money(G.rawPrepAcre)}/acre`:'')}</td></tr>`}
+  const Wt=m.W;if(Wt.lines.length){eq+=hdr(`Water: ${money(Wt.wellCap+Wt.rights+Wt.transfer+(G.fruit==='estate'?m.acres*G.dripAcre:0))} up front, ${money(Wt.annual)} a year`)+Wt.lines.map(l=>`<tr><td>${l.k}</td><td></td><td>${l.yr?money(l.yr)+'/yr':''}</td><td>${l.cap?money(l.cap):''}</td><td>${l.why}</td></tr>`).join('')}
+  const ex=m.rows[8]||m.rows[m.rows.length-1],exGal=ex.sold*2.378,exSh=G.tasting?G.shareTR:G.shareNoTR,dtc=(exSh[0]+exSh[1])/100,fedEx=Math.max(0,exGal*G.fedExcise-Math.min(exGal,30000)-Math.min(Math.max(exGal-30000,0),100000)*0.9),waEx=exGal*3.785*G.waTaxL*dtc*G.waShare/100;
+  eq+=hdr(`Excise tax, year 8: ${money(ex.fixed.excise)}`)+`<tr><td>Federal</td><td>${n0(exGal)} gal removed</td><td>$${G.fedExcise.toFixed(2)}/gal less $1.00 credit</td><td>${money(fedEx)}</td><td>the small-producer credit covers almost all of it on the first 30,000 gallons a year</td></tr><tr><td>Washington</td><td>${Math.round(dtc*G.waShare)}% of gallons</td><td>$${G.waTaxL}/liter</td><td>${money(waEx)}</td><td>on tasting room and club sales to Washington residents; distributors pay it on wholesale. Reds over 14% need an affidavit on file to stay at this rate</td></tr>`;
+  eq+=hdr('Storage and property tax, year 8')+`<tr><td>Bottled wine storage</td><td>${n0(m.peakBottled)} peak cases</td><td>${G.storage==='onsite'?'on site':'off-site bonded'}</td><td>${G.storage==='onsite'?'':money(r8.storage)+'/yr'}</td><td>${G.storage==='onsite'?'adds the case storage room above, its property tax, insurance and upkeep':'monthly per-case fee, handling in and out, and bond admin'}</td></tr><tr><td>Property tax</td><td></td><td></td><td>${money(r8.propTax)}/yr</td><td>on land, building and equipment. Wine inventory itself is exempt in Washington, so the tax difference between the two storage choices is the building, not the wine</td></tr>`;
+  if(own&&m.lbr){const W=m.lbr,mk=s=>W.tasks.filter(t=>t.season===s).map(t=>`<tr><td>${t.k}</td><td>${n0(t.hrs)} hrs</td><td></td><td></td><td>${t.why}</td></tr>`).join('');
+    eq+=hdr(`Labor: ${n0(W.harvestHrs+W.yearHrs)} hours a year, ${money(W.total)} plus the winemaker`)+
+     `<tr><td><i>Harvest, ${W.harvestWeeks.toFixed(1)} weeks</i></td><td>${n0(W.harvestHrs)} hrs</td><td>${n0(W.peakWeek)} hrs/week</td><td></td><td>average week; the busiest weeks run well above it</td></tr>`+mk('harvest')+
+     `<tr><td><i>Rest of the year</i></td><td>${n0(W.yearHrs)} hrs</td><td></td><td></td><td></td></tr>`+mk('year')+
+     `<tr><td><b>Who does it</b></td><td></td><td></td><td></td><td></td></tr>`+
+     `<tr><td>${G.owner==='hire'?'Hired winemaker':'Owner as winemaker'}</td><td>${n0(W.wmH+W.wmY)} hrs</td><td></td><td>in salary</td><td>${G.wmHarvestHrs} hours a week hands-on at harvest, ${G.wmCellarHrs} the rest of the year</td></tr>`+
+     `<tr><td>Full-time cellar staff</td><td>${W.perms}</td><td>$${G.cellarWage}/hr</td><td>${money(W.cost.perm+W.cost.ot)}</td><td>${W.perms?`hired once off-season work passes about 60% of a full-time job; ${n0(W.otHrs)} overtime hours at harvest`:'off-season work does not justify a full-time hire'}</td></tr>`+
+     (W.partHrs>0?`<tr><td>Part-time cellar help</td><td>${n0(W.partHrs)} hrs</td><td>$${G.cellarWage}/hr</td><td>${money(W.cost.part)}</td><td>off-season hours left over</td></tr>`:'')+
+     `<tr><td>Seasonal harvest workers</td><td>${W.seasonalHeads}</td><td>$${G.seasonalWage}/hr</td><td>${money(W.cost.seasonal)}</td><td>${n0(W.seasonalHrs)} harvest hours the winemaker and full-time staff can't cover</td></tr>`;}
+  if(!own)eq='<tr><td colspan="5">No winery to build. The custom crush fee covers tanks, press, cellar work and most routine analysis.</td></tr>'+eq;
+  const bbl=V.map((v,i)=>[v,i]).filter(([v])=>v.barrel>0).map(([v,i])=>{const per=v.cases*2.4/59.4,stock=m.FL.bPeak[i]*G.barrelSpare;return `<tr><td>Barrels, ${v.name}</td><td>${Math.ceil(stock)}</td><td>${v.newOak}% new</td><td>${money(stock*(v.newOak/100*G.barrelNew+(1-v.newOak/100)*G.barrelUsed))}</td><td>${Math.ceil(per)} per vintage, ${v.barrel} months, peak ${Math.round(m.FL.bPeak[i])} in use at once from the cellar flow, then about ${Math.ceil(per*Math.max(v.newOak/100,0.2))} bought each year</td></tr>`}).join('');
+  const cap=Object.entries(lines).map(([k,v])=>`<tr><td>${k}</td><td></td><td></td><td>${money(v)}</td><td></td></tr>`).join('');
+  $('equip').innerHTML=`<thead><tr><th>Item</th><th>Qty</th><th>Size</th><th>Cost</th><th>Why</th></tr></thead><tbody>${eq}${bbl?hdr('Barrels')+bbl:''}${hdr('Capital by category')}${cap}</tbody>`;
+}
+function syncControls(){
+  for(const k in fmt){$('i_'+k).value=G[k];$('o_'+k).textContent=fmt[k](+G[k])}
+  document.querySelectorAll('[data-d]').forEach(b=>b.classList.toggle('on',String(G[b.dataset.d])===b.dataset.v));
+  $('fc').classList.toggle('on',finView==='cash');$('fl').classList.toggle('on',finView==='loan');
+  ['vineDevAcre','farmAcre','dripAcre','afPerAcre','districtAcre','waterRightAF','rawPrepAcre','plantablePct','rightTransfer','irrWellDepth','irrWellFt','liftFt','kwh'].forEach(k=>$('c_'+k).style.opacity=G.fruit==='estate'?1:.45);
+  ['suppliesCase','cellarWage','seasonalWage','seasonalBurden','bottlePerDay','crushCrew','capHrs','generalHrs','permHarvestHrs','sfPerKgal','sfPerBarrel','sfPerCaseStored','permitPct','jacketGal','storageGal','hoseFt','designFactor','lotTons','testsPerLot','labWage'].forEach(k=>$('c_'+k).style.opacity=G.facility==='build'?1:.45);
+  ['offsiteCaseMonth','offsiteInOut','offsiteAdmin'].forEach(k=>$('c_'+k).style.opacity=G.storage==='offsite'||G.facility==='custom'?1:.45);
+  document.querySelectorAll('[data-d]').forEach(b=>{if(buildOnly.includes(b.dataset.d))b.disabled=G.facility!=='build';if(b.dataset.d==='water')b.disabled=G.fruit!=='estate'});
+  $('c_customCase').style.opacity=G.facility==='custom'?1:.45;
+}
+function run(skipWines){
+  M=model(V,G,simulate);
+  const c=M.fin.cash,l=M.fin.loan;
+  $('headline').textContent=c.payback==null?`On these numbers the owner's cash isn't back within 20 years`:`${money(c.equityTot)} in, owner's cash back in year ${c.payback}`;
+  $('cardCash').innerHTML=card(c,'All cash');
+  $('cardLoan').innerHTML=l.loanAmt?card(l,'With a loan'):`<h3>With a loan</h3><div class="sub">Nothing to borrow against: no land, building or equipment in this setup.</div>`;
+  if(!skipWines)renderWines();else renderWines();
+  syncControls();implied();years();drawJ();drawY();FL=null;renderFlow();
+  try{localStorage.setItem('feasV10',JSON.stringify({V,G}))}catch(e){}
+}
+document.addEventListener('click',e=>{
+  const d=e.target.closest('[data-d]');if(d){const k=d.dataset.d,v=d.dataset.v;G[k]=v==='true'?true:v==='false'?false:v;run();return}
+  const tb=e.target.closest('[data-tab]');if(tb){tab=tb.dataset.tab;setTab();return}
+  const un=e.target.closest('[data-unit]');if(un){unit=un.dataset.unit;setTab();return}
+  const rg=e.target.closest('[data-rng]');if(rg){rng=rg.dataset.rng;const[a,b]=rangeOf();if(cur<a||cur>b)cur=a+Math.round((b-a)*0.3);setTab();return}
+  const f=e.target.closest('[data-fin]');if(f){finView=f.dataset.fin;syncControls();years();return}
+  if(e.target.id==='reset'){V=deepCopy(VDEF);G=deepCopy(GDEF);run()}
+});
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('srcTable').innerHTML='<thead><tr><th>Assumption</th><th>Default</th><th>Basis</th><th>Confidence</th><th>Source</th></tr></thead><tbody>'+SOURCES.map(([a,v,b,c,u])=>`<tr><td>${esc(a)}</td><td>${esc(v)}</td><td>${esc(b)}</td><td><span class="conf ${c}">${c}</span></td><td>${u?`<a href="${esc(u)}">${esc(new URL(u).hostname.replace('www.',''))}</a>`:''}</td></tr>`).join('')+'</tbody>';
+function setTab(){
+  $('flowView').hidden=tab!=='flow';$('moneyView').hidden=tab!=='money';
+  $('tbMoney').classList.toggle('on',tab==='money');$('tbFlow').classList.toggle('on',tab==='flow');
+  $('tbMoney').setAttribute('aria-selected',tab==='money');$('tbFlow').setAttribute('aria-selected',tab==='flow');
+  document.querySelectorAll('[data-rng]').forEach(b=>b.classList.toggle('on',b.dataset.rng===rng));document.querySelectorAll('[data-unit]').forEach(b=>b.classList.toggle('on',b.dataset.unit===unit));
+  if(tab==='flow'){if(!FL)renderFlow();else drawFlow()}else{drawJ()}
+}
+// moving the date only slides the cursor lines and refreshes the panel; the charts are redrawn only when the data or range changes
+let curRAF=0;
+function moveCursor(){if(curRAF)return;curRAF=requestAnimationFrame(()=>{curRAF=0;const[d0,d1]=rangeOf(),f=(cur-d0)/(d1-d0);
+  document.querySelectorAll('#flowView line.cur').forEach(l=>{const x=+l.dataset.x0+f*(+l.dataset.x1-l.dataset.x0);l.setAttribute('x1',x);l.setAttribute('x2',x)});
+  $('scrub').value=cur;snap()})}
+$('scrub').addEventListener('input',e=>{cur=+e.target.value;moveCursor()});
+['sF','sG','sL','sE'].forEach(id=>$(id).addEventListener('pointermove',e=>{if(!FL)return;const r=$(id).getBoundingClientRect(),[d0,d1]=rangeOf(),l={sF:8,sG:150,sL:40,sE:8}[id],rr=12;const f=(e.clientX-r.left-l)/(r.width-l-rr);if(f<0||f>1)return;cur=Math.round(d0+f*(d1-d0));moveCursor()}));
+const ro=new ResizeObserver(()=>{drawJ();drawY();if(tab==='flow')drawFlow()});ro.observe($('sJ'));ro.observe($('sY'));ro.observe($('sF'));ro.observe($('sL'));
+try{const s=JSON.parse(localStorage.getItem('feasV10'));if(s&&Array.isArray(s.V)&&s.G){V=s.V;G={...G,...s.G}}}catch(e){}
+run();setTab();
+}
+</script>
+</body>
+</html>
