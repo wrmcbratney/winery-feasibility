@@ -27,6 +27,13 @@ test('built page loads and interactions run', async () => {
   w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true, bubbles: true }));
   await new Promise(r => setTimeout(r, 50));
   assert.strictEqual(+$('scrub').value, before + 7, 'shift + right arrow moves a week');
+  $('sF').dispatchEvent(new w.MouseEvent('click', { clientX: 300, bubbles: true }));
+  const lockedAt = +$('scrub').value;
+  assert.ok($('flowView').classList.contains('locked'), 'clicking a chart locks the date');
+  $('sF').dispatchEvent(new w.MouseEvent('pointermove', { clientX: 600, bubbles: true }));
+  assert.strictEqual(+$('scrub').value, lockedAt, 'a locked date ignores the mouse');
+  w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  assert.ok(!$('flowView').classList.contains('locked'), 'esc unlocks');
   $('snap').querySelector('[data-loc="barrel"]').click();
   assert.match($('snap').querySelector('.detail').textContent, /^Barrels:/, 'tapping a location pins its lot details');
   assert.match($('laborNow').textContent, /hrs/);
