@@ -3,24 +3,24 @@
 // all-variety rise to 2024 (+18%), except Cabernet (2025 actual), Merlot (2024 actual), Malbec (2024, derived) and Pinot Noir (Oregon 2025).
 // pick = first pick day of year (lots follow every 2 days); soak = cold soak days, setF = ferment temperature, ext = extended maceration days after dryness.
 const VARIETIES={
- 'Cabernet Sauvignon':{pick:283,color:'red',grape:3170,tpa:3.5,cpt:60,brix:26,barrel:20,newOak:50,release:30,price:70,soak:3,setF:85,ext:7},
- 'Merlot':{pick:268,color:'red',grape:2595,tpa:4,cpt:60,brix:25,barrel:18,newOak:35,release:28,price:50,soak:3,setF:84,ext:3},
- 'Cabernet Franc':{pick:278,color:'red',grape:2450,tpa:3.5,cpt:60,brix:25,barrel:18,newOak:35,release:28,price:55,soak:3,setF:84,ext:3},
- 'Petit Verdot':{pick:288,color:'red',grape:2270,tpa:3.5,cpt:58,brix:26,barrel:20,newOak:40,release:30,price:55,soak:3,setF:85,ext:5},
- 'Malbec':{pick:272,color:'red',grape:1500,tpa:4,cpt:60,brix:25.5,barrel:16,newOak:30,release:26,price:45,soak:3,setF:85,ext:3},
- 'Syrah':{pick:265,color:'red',grape:1580,tpa:4,cpt:60,brix:25.5,barrel:16,newOak:25,release:26,price:50,soak:2,setF:82,ext:0},
- 'Grenache':{pick:276,color:'red',grape:1900,tpa:4.5,cpt:62,brix:25.5,barrel:10,newOak:0,release:18,price:40,soak:2,setF:80,ext:0},
- 'Mourvedre':{pick:285,color:'red',grape:1810,tpa:4,cpt:60,brix:25,barrel:14,newOak:10,release:22,price:42,soak:2,setF:82,ext:0},
- 'Sangiovese':{pick:275,color:'red',grape:1480,tpa:4.5,cpt:62,brix:24.5,barrel:12,newOak:10,release:20,price:38,soak:2,setF:84,ext:3},
- 'Pinot Noir':{pick:262,color:'red',grape:2800,tpa:2.8,cpt:58,brix:24.5,barrel:11,newOak:25,release:18,price:50,soak:4,setF:82,ext:0},
- 'Chardonnay':{pick:255,color:'white',grape:1200,tpa:4,cpt:62,brix:23.5,barrel:10,newOak:30,release:12,price:40},
- 'Sauvignon Blanc':{pick:245,color:'white',grape:1170,tpa:5,cpt:65,brix:23,barrel:0,newOak:0,release:8,price:28},
- 'Semillon':{pick:255,color:'white',grape:1630,tpa:4.5,cpt:65,brix:23,barrel:8,newOak:10,release:12,price:32},
- 'Viognier':{pick:256,color:'white',grape:1360,tpa:4,cpt:62,brix:24,barrel:6,newOak:0,release:10,price:32},
- 'Riesling':{pick:260,color:'white',grape:1030,tpa:5.5,cpt:68,brix:22,barrel:0,newOak:0,release:8,price:25},
- 'Chenin Blanc':{pick:262,color:'white',grape:1220,tpa:5,cpt:65,brix:22.5,barrel:6,newOak:0,release:10,price:28},
- 'Pinot Gris':{pick:250,color:'white',grape:1020,tpa:5,cpt:65,brix:22.5,barrel:0,newOak:0,release:8,price:25},
- 'Gewurztraminer':{pick:255,color:'white',grape:860,tpa:5,cpt:65,brix:22.5,barrel:0,newOak:0,release:8,price:24}
+ 'Cabernet Sauvignon':{pick:283,color:'red',grape:3170,tpa:3.5,cpt:60,brix:26,barrel:20,newOak:50,release:30,price:70,soak:3,setF:85,ext:7,glass:'heavy',closure:'natural',capsule:'polylam',ml:true},
+ 'Merlot':{pick:268,color:'red',grape:2595,tpa:4,cpt:60,brix:25,barrel:18,newOak:35,release:28,price:50,soak:3,setF:84,ext:3,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
+ 'Cabernet Franc':{pick:278,color:'red',grape:2450,tpa:3.5,cpt:60,brix:25,barrel:18,newOak:35,release:28,price:55,soak:3,setF:84,ext:3,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
+ 'Petit Verdot':{pick:288,color:'red',grape:2270,tpa:3.5,cpt:58,brix:26,barrel:20,newOak:40,release:30,price:55,soak:3,setF:85,ext:5,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
+ 'Malbec':{pick:272,color:'red',grape:1500,tpa:4,cpt:60,brix:25.5,barrel:16,newOak:30,release:26,price:45,soak:3,setF:85,ext:3,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
+ 'Syrah':{pick:265,color:'red',grape:1580,tpa:4,cpt:60,brix:25.5,barrel:16,newOak:25,release:26,price:50,soak:2,setF:82,ext:0,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
+ 'Grenache':{pick:276,color:'red',grape:1900,tpa:4.5,cpt:62,brix:25.5,barrel:10,newOak:0,release:18,price:40,soak:2,setF:80,ext:0,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
+ 'Mourvedre':{pick:285,color:'red',grape:1810,tpa:4,cpt:60,brix:25,barrel:14,newOak:10,release:22,price:42,soak:2,setF:82,ext:0,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
+ 'Sangiovese':{pick:275,color:'red',grape:1480,tpa:4.5,cpt:62,brix:24.5,barrel:12,newOak:10,release:20,price:38,soak:2,setF:84,ext:3,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
+ 'Pinot Noir':{pick:262,color:'red',grape:2800,tpa:2.8,cpt:58,brix:24.5,barrel:11,newOak:25,release:18,price:50,soak:4,setF:82,ext:0,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
+ 'Chardonnay':{pick:255,color:'white',grape:1200,tpa:4,cpt:62,brix:23.5,barrel:10,newOak:30,release:12,price:40,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
+ 'Sauvignon Blanc':{pick:245,color:'white',grape:1170,tpa:5,cpt:65,brix:23,barrel:0,newOak:0,release:8,price:28,glass:'standard',closure:'screwcap',capsule:'none',ml:false},
+ 'Semillon':{pick:255,color:'white',grape:1630,tpa:4.5,cpt:65,brix:23,barrel:8,newOak:10,release:12,price:32,glass:'standard',closure:'screwcap',capsule:'none',ml:false},
+ 'Viognier':{pick:256,color:'white',grape:1360,tpa:4,cpt:62,brix:24,barrel:6,newOak:0,release:10,price:32,glass:'standard',closure:'screwcap',capsule:'none',ml:false},
+ 'Riesling':{pick:260,color:'white',grape:1030,tpa:5.5,cpt:68,brix:22,barrel:0,newOak:0,release:8,price:25,glass:'standard',closure:'screwcap',capsule:'none',ml:false},
+ 'Chenin Blanc':{pick:262,color:'white',grape:1220,tpa:5,cpt:65,brix:22.5,barrel:6,newOak:0,release:10,price:28,glass:'standard',closure:'screwcap',capsule:'none',ml:false},
+ 'Pinot Gris':{pick:250,color:'white',grape:1020,tpa:5,cpt:65,brix:22.5,barrel:0,newOak:0,release:8,price:25,glass:'standard',closure:'screwcap',capsule:'none',ml:false},
+ 'Gewurztraminer':{pick:255,color:'white',grape:860,tpa:5,cpt:65,brix:22.5,barrel:0,newOak:0,release:8,price:24,glass:'standard',closure:'screwcap',capsule:'none',ml:false}
 };
 // Bottling is the winemaker's call; the default is a month after barrel time ends (reds reach barrel in spring, about month 6).
 const defBottle=v=>v.barrel>0?Math.round((v.color==='red'?6:0.5)+v.barrel+1):5;
@@ -36,9 +36,12 @@ const GDEF={
  fedExcise:1.07, waTaxL:0.2292, waShare:85,
  buildTier:'custom', storage:'onsite', lab:'outsource', sort:'hand', trSqft:2000, trFitout:250000, permitPct:1, sfPerKgal:35, sfPerBarrel:3, sfPerCaseStored:0.15,
  jacketGal:9, storageGal:6, hoseFt:20, harvestWindow:28, designFactor:1.15, barrelSpare:1.05, lotsPerTank:2, ozone:true, chillerTon:1800, jacketFlux:1500,
+ yanHarvest:180, yanTarget21:200, yanPerBrix:25, complexRate:25, complexYan:25, yeastRate:25, acidRed:1.0, acidWhite:0.5, bentWhite:0.5,
+ so2Crush:30, so2PostAF:50, so2Rack:15, so2Barrel:10, so2BarrelDays:60, so2Bottle:20, dryIceLbTon:15, purgeVolumes:1,
+ otherSupplies:1.0, filterPasses:1, galPerPad:50, cipGalMin:15, cipFrac:0.015, percGpg:14, citricGpg:4, barrelPercShare:0.2,
  barrelNew:1400, barrelUsed:400,
- suppliesCase:8, customCase:45, capHrs:0.33, crushCrew:4, bottlePerDay:1200, shiftHrs:10, generalHrs:20, harvestWeeks:8, wmHarvestHrs:45, wmCellarHrs:15, permHarvestHrs:55, cellarWage:24, seasonalWage:20, seasonalBurden:15, tankLeaseCustom:0,
- bottlePer:2.6, carton:2.5, bottling:3.5,
+ customCase:45, capHrs:0.33, crushCrew:4, bottlePerDay:1200, shiftHrs:10, generalHrs:20, harvestWeeks:8, wmHarvestHrs:45, wmCellarHrs:15, permHarvestHrs:55, cellarWage:24, seasonalWage:20, seasonalBurden:15, tankLeaseCustom:0,
+ labelSet:0.30, carton:2.5, bottling:3.5,
  wmSalary:120000, burden:25, ownerSalary:100000, adminCost:60000, trStaff:190000, trLease:60000,
  propTaxPct:1, offsiteCaseMonth:0.35, offsiteInOut:1, offsiteAdmin:3000, testsPerLot:15, testExt:40, lotTons:5, labWage:30,
  utilBase:20000, utilCase:1.5, insurePct:0.5, maintPct:1.5, marketingPct:6, dtcFeePct:3,
@@ -96,6 +99,7 @@ function exciseTax(s,G,shares){
   const dtc=(shares[0]+shares[1])/100, wa=gal*3.785*G.waTaxL*dtc*G.waShare/100;
   return fed+wa;
 }
+function getSup(){return typeof chemicals==='function'?{chemicals,dryCase}:require('./supplies.js')}
 function getFlow(){return typeof flow==='function'?flow:require('./flow.js').flow}
 function size(V,G,simulate,FL){
   const items=[];let red=V.filter(v=>v.color==='red'),white=V.filter(v=>v.color==='white');
@@ -222,10 +226,12 @@ function plan(Vin,Gin,simulate){
   const labYear=tests*(outShare*G.testExt+(own?L.share:0)*(L.consum+L.hrs*G.labWage));
   const lab={lots,tests,outTests:tests*outShare,inTests:own?tests*L.share:0,cost:labYear,equip:L.equip,name:own?L.name:'Custom crush plus outside lab'};
   const lbr=own?labor(V,G,sz,lab,simulate,FL):null, laborCase=own?lbr.total/totCases:0;
+  // cellar chemicals from one vintage's lots: each wine carries its own, sulfuring empty barrels is spread over every case
+  const CH=getSup().chemicals(FL,V,G), chemCase=V.map((v,i)=>v.cases?CH.per[i]/v.cases+CH.winery/totCases:0);
   const shares=G.tasting?G.shareTR:G.shareNoTR;
   const netFactor=(shares[0]+shares[1]*(1-G.clubDisc/100)+shares[2]*G.wholesaleFactor/100)/100;
   const firstRel=V.map(v=>1+Math.floor((9.5+v.release)/12));
-  const P={V,G,Y,totCases,allTons,estate,own,acres,FL,sz,lab,lbr,laborCase,shares,netFactor,firstRel};
+  const P={V,G,Y,totCases,allTons,estate,own,acres,FL,sz,lab,lbr,laborCase,CH,chemCase,shares,netFactor,firstRel};
   // ---- the building is sized from the plan's own inventory path, so run the plan's years once for the peak of bottled wine ----
   let S=initState(P),peakBottled=0;
   for(let y=0;y<=Y;y++){const r=stepYear(P,S,y);peakBottled=Math.max(peakBottled,r.sales.bottledPeak)}
@@ -261,18 +267,18 @@ function plan(Vin,Gin,simulate){
 function initState(P){return {vint:[],dryDue:{},capSpent:0}}
 // One year. luck = {yieldF:[per wine], priceF:[per wine]}; defaults leave the plan unchanged.
 function stepYear(P,S,y,luck){
-  const {V,G,estate,own,laborCase,shares,netFactor,firstRel,FL}=P;
+  const {V,G,estate,own,laborCase,chemCase,shares,netFactor,firstRel,FL}=P;
   const yf=i=>luck&&luck.yieldF?luck.yieldF[i]:1, pf=i=>luck&&luck.priceF?luck.priceF[i]:1;
   let fruitC=0,farmC=0,prodC=0,barrelC=0;
   // ---- harvest this year's vintage ----
   if(y>=1)V.forEach((v,i)=>{
     const t=tonsOf(v)*yf(i), cases=v.cases*yf(i), estT=estate?t*bearing(y):0, buyT=t-estT;
     const fruit=buyT*v.grape, farm=estate&&bearing(y)>0?(tonsOf(v)/v.tpa)*G.farmAcre:0;
-    const prod=own?cases*(G.suppliesCase+laborCase):cases*G.customCase;
+    const prod=own?cases*(chemCase[i]+laborCase):cases*G.customCase;
     const bbl=v.barrel>0?cases*2.4/59.4:0, newShare=v.newOak/100;
     const stock=v.barrel>0?FL.bStock[i]:0;
     const barrelCost=y===1?stock*(newShare*G.barrelNew+(1-newShare)*G.barrelUsed):bbl*(newShare*G.barrelNew+Math.max(0,0.2-newShare)*G.barrelUsed);
-    const dry=cases*(G.bottlePer*12+G.carton+G.bottling);
+    const dry=cases*getSup().dryCase(v,G);
     const relYear=y+Math.floor((9.5+v.release)/12), botYear=y+Math.floor((9.5+Math.min(bottleOf(v),v.release))/12);
     fruitC+=fruit;farmC+=farm;prodC+=prod;barrelC+=barrelCost;S.dryDue[botYear]=(S.dryDue[botYear]||0)+dry;
     const bf=((9.5+Math.min(bottleOf(v),v.release))%12)/12; // fraction of the calendar year at which it is bottled
@@ -332,7 +338,7 @@ function model(Vin,Gin,simulate){
   for(let y=0;y<=P.Y;y++)rows.push(stepYear(P,S,y).row);
   const fin={cash:finance(rows,P,0),loan:finance(rows,P,P.eligible*P.G.loanLTV/100)};
   const {sz,bld,lab,lbr,FL,W,LD,acres,landAcres,land,capLines,netFactor,totCases,allTons,firstRel,peakBottled,V,G}=P;
-  return {rows,fin,sz,bld,lab,lbr,FL,W,LD,acres,landAcres,land,capexTotal:P.capex.reduce((a,c)=>a+c,0),capLines,netFactor,totCases,allTons,firstRel,peakBottled,rampBacklog:P.rampBacklog,V,G,P};
+  return {rows,fin,sz,bld,lab,lbr,FL,W,LD,acres,landAcres,land,capexTotal:P.capex.reduce((a,c)=>a+c,0),capLines,CH:P.CH,chemCase:P.chemCase,netFactor,totCases,allTons,firstRel,peakBottled,rampBacklog:P.rampBacklog,V,G,P};
 }
 // ---- financing, one year at a time ----
 function finInit(P,loanAmt){const G=P.G,r=G.loanRate/100,n=G.loanTerm;return {loanAmt,r,pmt:loanAmt>0?loanAmt*r/(1-Math.pow(1+r,-n)):0,bal:loanAmt,cash:0,cum:0,equityTot:0,out:[]}}

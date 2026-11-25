@@ -117,11 +117,15 @@ The ledger and scheduler should not be built on these until they are confirmed. 
 
 **E. Step 3 and step 5 are closer than the brief implies.** Design-mode vessel assignment is a packing and scheduling problem in its own right. Building the resource calendar once, in step 3, is cheaper than building it twice.
 
-## 8. Noted for the deferred sales work
+## 8. Lots, wines and blends (affects step 2)
+
+The owner wants several wines from one variety (a reserve, a single vineyard bottling) and blends across varieties. Today a wine is a variety: its lots, presets and costs all hang off one row. The ledger should separate the two. A lot is fruit from a source (variety, vineyard or block, pick) and carries the physical history. A wine is a finished product that draws gallons from one or more lots, with its own barrel regime, bottling, package, release and price. Reserve selection is then a draw of the best lots at blending, and a blend is a draw across varieties. Lots are made first and assigned to wines at blending, so the lot ledger has to come before wines-as-blends, and costs (fruit, chemicals, barrels) follow the gallons from lot to wine.
+
+## 9. Noted for the deferred sales work
 
 Pricing is per bottle in the model, but real pricing differs by bottle and by case (case discounts), and the year includes club-release discounts and end-of-season sales beyond the flat club discount. Nothing to build yet; the sales model should carry a price schedule by channel and season rather than one net factor.
 
-## 9. Decisions log
+## 10. Decisions log
 
 - **Decided (Nov 2026):** stay with plain JavaScript modules, single inlined page, no solver for the first scheduler.
 - **Step 1 judgment calls, open for review:**
@@ -131,7 +135,7 @@ Pricing is per bottle in the model, but real pricing differs by bottle and by ca
   - Off-season staffing (item 10): permanent crew and a part-time position are still set from average off-season hours. Routine work a few hours over slides to the next day; days more than four hours over the steady crew get temporary help with a four-hour minimum call at the seasonal wage, and those hours come out of the part-time position. At default that is 13 days, mostly bottling. A first attempt that re-solved the part-time rate after removing temp hours cascaded to 140 temp days a year and was dropped.
   - Per-lot cooling (item 3): jacket area on the assigned red tank times a heat flux of 1,500 BTU/hr per sq ft (Low confidence). At default this does not change any ferment; the chiller rule is untouched until step 4.
 
-## 10. Step 1 results
+## 11. Step 1 results
 
 Found while testing, not in the outside review: blending tanks were sized from finished wine volume (cases times 2.378 gal plus 3%), but the wine arriving from barrel is the larger pre-loss volume, so a blend tank could hold more than its size. The new capacity invariant caught it. Blend tanks are now sized for what arrives; the underlying mismatch is a lot ledger problem (step 2).
 
@@ -141,3 +145,9 @@ Headline changes at default (base scenario), all from physical corrections:
 - Cellar labor down about $1,250 a year: off-season bottling peaks now go to temporary help at the seasonal wage instead of part-time hours at the cellar wage, and seasonal overtime adds a little back.
 - Payback one year later (12 rather than 11); cash IRR 9.55% rather than 9.75%.
 - Two exceptions now show on the Cellar flow tab at default: Pinot Noir and Cabernet barrel time extended by under a month to meet blending.
+
+## 12. Packaging and cellar chemicals (November 2026)
+
+Built at the owner's request ahead of the ledger. Each wine picks glass, closure and capsule from a priced list; labels, carton and mobile bottling stay winery-wide. Still wines only; sparkling (crown caps, tirage, riddling, disgorging) is deferred as its own process path. Chemicals are counted from each lot's events and priced from supplier lists; usage rates are placeholders under Cellar practice until the owner sets his own. The nutrient plan (YAN target by Brix, complex nutrient then DAP, capped at 0.96 g/L under 27 CFR 24.246) is the same one the fermentation kinetics use, so a lot ferments with the nitrogen it was given. An explicit $1.00 a case covers supplies not itemized.
+
+Results at default: dry goods fall about $20,600 a year (whites move to screwcap, Cabernet to heavy glass and natural cork); itemized chemicals and supplies come to about $10,600 a year against $32,000 under the old flat $8 a case; with nutrient additions the red ferments run 3 to 5 days shorter. Cash IRR 9.55% to 10.15%, payback 12 to 11 years. Open: the owner's own rates for SO2, nutrients, acid, fining, gas and cleaning, and his package per wine.

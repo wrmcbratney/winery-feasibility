@@ -14,10 +14,11 @@ The page has two tabs:
 | `src/core.js` | Fermentation and malolactic kinetics for one lot (Boulton-style: nitrogen-limited growth, Monod sugar uptake, ethanol inhibition, heat balance, ML timing against cellar temperature). Shared with the standalone Winery Lot Simulator. |
 | `src/flow.js` | Lot plan for every wine, the steady-state cellar calendar (gallons and vessels by location), and the daily work and equipment calendar. |
 | `src/exceptions.js` | One record shape for departures from the plan as set (a stuck ferment, barrel time cut or extended), with a severity class from feasible as planned to physically infeasible. |
+| `src/supplies.js` | Packaging per wine (glass, closure, capsule, labels) and cellar chemicals built from each lot's events: SO2 additions, yeast, nutrients to a YAN target under the federal DAP limit, ML bacteria, acid, bentonite, filter pads, CO2 purges, dry ice, cleaning chemicals, sulfuring empty barrels, and an explicit allowance for what is not itemized. The same nutrient plan feeds the fermentation kinetics. |
 | `src/winery.js` | The resolved winery: press size and cycle, sorting and crush rates, jacket cooling, and the one function that sets up a lot simulation. |
 | `src/fin.js` | Variety presets, defaults, equipment sizing from the flow, building by space, land, water, lab, labor and excise. The engine is year-stepped: `plan()` makes the year-0 decisions and capital schedule, `stepYear()` runs one year (harvest the vintage, sell oldest first, book costs) with an optional luck input for yield and price, and `finStep()` runs one year of cash, loan, equity and distributions. `model()` chains them for a fixed 20-year plan. |
 | `src/sources.js` | The assumptions table: value, basis, confidence, link. |
-| `src/index.src.html` | The page. Placeholders `/*CORE*/`, `/*EXC*/`, `/*WINERY*/`, `/*FIN*/`, `/*SRC*/`, `/*FLOW*/` are filled by the build. |
+| `src/index.src.html` | The page. Placeholders `/*CORE*/`, `/*EXC*/`, `/*SUP*/`, `/*WINERY*/`, `/*FIN*/`, `/*SRC*/`, `/*FLOW*/` are filled by the build. |
 | `build.py` | Inlines the engine into `dist/index.html`, a single self-contained page. |
 
 The engine files run in the browser and in Node, so the same code is tested and shipped.
@@ -30,7 +31,7 @@ npm test        # builds dist/index.html, then runs engine and page tests
 npm run build   # build only
 ```
 
-Tests live in `test/`: `engine.test.js` (regression and earlier invariants), `fixes.test.js` (one test per reviewed inconsistency, seeded randomized coverage, and invariants for gallon-day conservation, vessel capacity and horizon), and `page.test.js` (the built page in jsdom). `test/baseline.json` holds headline outputs for a few scenarios. When a change is meant to move the numbers, regenerate it on purpose and say so in the commit.
+Tests live in `test/`: `engine.test.js` (regression and earlier invariants), `fixes.test.js` (one test per reviewed inconsistency, seeded randomized coverage, and invariants for gallon-day conservation, vessel capacity and horizon), `supplies.test.js` (packaging and chemicals), and `page.test.js` (the built page in jsdom). `test/baseline.json` holds headline outputs for a few scenarios. When a change is meant to move the numbers, regenerate it on purpose and say so in the commit.
 
 ## Published page
 

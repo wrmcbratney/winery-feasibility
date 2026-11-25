@@ -189,6 +189,7 @@ kbd{font:12px/1 ui-monospace,monospace;border:1px solid var(--rule);border-botto
 {
 /*CORE*/
 /*EXC*/
+/*SUP*/
 /*WINERY*/
 /*FIN*/
 /*SRC*/
@@ -324,8 +325,8 @@ $('decisions').innerHTML=decisions.map(([k,l,opts])=>`<div><div class="dlab">${l
 
 const wcols=[['cases','Cases/yr',100,20000,50],['price','Retail $/btl',10,300,1],['bottle','Months to bottling',2,60,1],['release','Months to release',3,72,1],['barrel','Months in barrel',0,36,1],['newOak','% new oak',0,100,5],['grape','Grapes $/ton',500,15000,50]];
 function renderWines(){
-  $('wines').innerHTML=`<thead><tr><th>Wine</th><th></th><th>Color</th>${wcols.map(c=>`<th>${c[1]}</th>`).join('')}<th>Tons</th></tr></thead><tbody>`+
-   V.map((v,i)=>`<tr><td><select data-i="${i}" data-f="name" aria-label="Variety">${varOpts(v.name)}</select></td><td><button data-rm="${i}" aria-label="Remove ${v.name}" title="Remove"${V.length<2?' disabled':''}>&times;</button></td><td><select data-i="${i}" data-f="color" aria-label="${v.name} color"><option value="white"${v.color==='white'?' selected':''}>white</option><option value="red"${v.color==='red'?' selected':''}>red</option></select></td>${wcols.map(([f,,mn,mx,st])=>`<td><input type="number" data-i="${i}" data-f="${f}" min="${mn}" max="${mx}" step="${st}" value="${v[f]}" aria-label="${v.name} ${f}"></td>`).join('')}<td>${(v.cases/v.cpt).toFixed(1)}</td></tr>`).join('')+
+  $('wines').innerHTML=`<thead><tr><th>Wine</th><th></th><th>Color</th>${wcols.map(c=>`<th>${c[1]}</th>`).join('')}<th>Glass</th><th>Closure</th><th>Capsule</th><th>Tons</th></tr></thead><tbody>`+
+   V.map((v,i)=>`<tr><td><select data-i="${i}" data-f="name" aria-label="Variety">${varOpts(v.name)}</select></td><td><button data-rm="${i}" aria-label="Remove ${v.name}" title="Remove"${V.length<2?' disabled':''}>&times;</button></td><td><select data-i="${i}" data-f="color" aria-label="${v.name} color"><option value="white"${v.color==='white'?' selected':''}>white</option><option value="red"${v.color==='red'?' selected':''}>red</option></select></td>${wcols.map(([f,,mn,mx,st])=>`<td><input type="number" data-i="${i}" data-f="${f}" min="${mn}" max="${mx}" step="${st}" value="${v[f]}" aria-label="${v.name} ${f}"></td>`).join('')}${[['glass',GLASS],['closure',CLOSURE],['capsule',CAPSULE]].map(([f,T])=>{const cur=pkgOf(v)[f];return `<td><select data-i="${i}" data-f="${f}" aria-label="${v.name} ${f}">${Object.entries(T).map(([k,o])=>`<option value="${k}"${k===cur?' selected':''}>${o.name} ($${o.cost.toFixed(2)})</option>`).join('')}</select></td>`}).join('')}<td>${(v.cases/v.cpt).toFixed(1)}</td></tr>`).join('')+
    `<tr><td><b>Total</b></td><td></td><td></td><td><b>${n0(V.reduce((a,v)=>a+v.cases,0))}</b></td><td colspan="6"></td><td><b>${V.reduce((a,v)=>a+v.cases/v.cpt,0).toFixed(1)}</b></td></tr></tbody>`;
 }
 const VN=Object.keys(VARIETIES);
@@ -333,13 +334,14 @@ const varOpts=sel=>['red','white'].map(col=>`<optgroup label="${col==='red'?'Red
 $('addVar').innerHTML=varOpts('Syrah');
 $('addWine').addEventListener('click',()=>{V.push({name:$('addVar').value,cases:500,...VARIETIES[$('addVar').value]});run()});
 $('wines').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(b&&V.length>1){V.splice(+b.dataset.rm,1);run()}});
-$('wines').addEventListener('change',e=>{const t=e.target,i=t.dataset.i,f=t.dataset.f;if(i===undefined)return;if(f==='name'){V[i]={name:t.value,cases:V[i].cases,...VARIETIES[t.value]};run();return}V[i][f]=f==='color'?t.value:Math.max(+t.min,Math.min(+t.max,+t.value||0));if(V[i].bottle==null)V[i].bottle=bottleOf(V[i]);if(f==='bottle'&&V[i].release<V[i].bottle)V[i].release=V[i].bottle;if(f==='release'&&V[i].bottle>V[i].release)V[i].bottle=V[i].release;run(true)});
+$('wines').addEventListener('change',e=>{const t=e.target,i=t.dataset.i,f=t.dataset.f;if(i===undefined)return;if(f==='name'){V[i]={name:t.value,cases:V[i].cases,...VARIETIES[t.value]};run();return}V[i][f]=['color','glass','closure','capsule'].includes(f)?t.value:Math.max(+t.min,Math.min(+t.max,+t.value||0));if(V[i].bottle==null)V[i].bottle=bottleOf(V[i]);if(f==='bottle'&&V[i].release<V[i].bottle)V[i].release=V[i].bottle;if(f==='release'&&V[i].bottle>V[i].release)V[i].bottle=V[i].release;run(true)});
 
 const groups=[
  ['Land and building',[['landAcre','Irrigated farmland',3000,150000,500,v=>money(v)+'/acre'],['dryLandAcre','Dry, ranch or scrub land',500,20000,250,v=>money(v)+'/acre'],['plantablePct','Plantable share of vineyard ground',50,95,1,v=>v+'%'],['siteCoverage','Buildings as share of the winery site',3,40,1,v=>v+'%'],['minParcel','Zoning minimum parcel',0,80,1,v=>v?v+' acres':'none'],['rawPrepAcre','Clearing raw ground for planting',0,6000,100,v=>money(v)+'/acre'],['landGrowth','Land appreciation',0,6,0.5,v=>v+'%/yr'],['trSqft','Tasting room size',500,6000,100,v=>n0(v)+' sq ft'],['sfPerKgal','Fermentation hall per 1,000 gal of tanks',15,70,1,v=>v+' sq ft'],['sfPerBarrel','Barrel room per barrel',1.5,8,0.5,v=>v+' sq ft'],['sfPerCaseStored','Case storage per bottled case',0.05,0.4,0.01,v=>v.toFixed(2)+' sq ft'],['permitPct','Permits',0,3,0.25,v=>v+'% of construction'],['trFitout','Leased tasting room fit-out',50000,1000000,10000,money]]],
  ['Vineyard',[['vineDevAcre','Development cost, excluding irrigation',15000,80000,1000,v=>money(v)+'/acre'],['farmAcre','Farming cost',2000,12000,250,v=>money(v)+'/acre/yr']]],
  ['Equipment and barrels',[['jacketGal','Jacketed tank cost at 1,000 gal',4,20,0.5,v=>'$'+v+'/gal'],['storageGal','Storage tank cost at 1,000 gal',3,15,0.5,v=>'$'+v+'/gal'],['hoseFt','2" wine hose',5,60,1,v=>'$'+v+'/ft'],['designFactor','Design margin over peak vessels in use',0.7,1.5,0.05,v=>'+'+Math.round((v-1)*100)+'%'],['barrelNew','New barrel',600,2000,25,v=>'$'+v],['barrelUsed','Used barrel',100,800,25,v=>'$'+v],['lotsPerTank','Lots of one wine sharing a lot tank after press',1,4,1,v=>v===1?'kept separate':v+' lots'],['barrelSpare','Spare barrels over peak',1,1.2,0.01,v=>'+'+Math.round((v-1)*100)+'%']]],
- ['Production',[['suppliesCase','Cellar supplies (yeast, SO2, chemicals)',2,25,0.5,v=>'$'+v+'/case'],['customCase','Custom crush fee',20,120,1,v=>'$'+v+'/case'],['bottlePer','Dry goods per bottle',1,8,0.1,v=>'$'+v.toFixed(2)],['carton','Carton',1,6,0.1,v=>'$'+v.toFixed(2)],['bottling','Mobile bottling',1,8,0.25,v=>'$'+v.toFixed(2)+'/case']]],
+ ['Production',[['otherSupplies','Other cellar supplies, not itemized',0,8,0.25,v=>'$'+v.toFixed(2)+'/case'],['customCase','Custom crush fee',20,120,1,v=>'$'+v+'/case'],['labelSet','Labels, front and back',0.05,1.5,0.01,v=>'$'+v.toFixed(2)+'/bottle'],['carton','Carton',1,6,0.1,v=>'$'+v.toFixed(2)],['bottling','Mobile bottling',1,8,0.25,v=>'$'+v.toFixed(2)+'/case']]],
+ ['Cellar practice',[['yanHarvest','YAN at harvest',60,400,5,v=>v+' mg/L'],['yanTarget21','YAN target at 21 Brix',120,350,5,v=>v+' mg/L'],['yanPerBrix','More YAN per Brix above 21',0,50,1,v=>v+' mg/L'],['yeastRate','Yeast inoculation',10,50,1,v=>v+' g/hL'],['complexRate','Complex nutrient',0,60,1,v=>v+' g/hL'],['acidRed','Tartaric addition, reds',0,3,0.1,v=>v.toFixed(1)+' g/L'],['acidWhite','Tartaric addition, whites',0,3,0.1,v=>v.toFixed(1)+' g/L'],['bentWhite','Bentonite, whites',0,2,0.05,v=>v.toFixed(2)+' g/L'],['so2Crush','SO2 at crush',0,80,5,v=>v+' mg/L'],['so2PostAF','SO2 after ML, or after ferment without ML',0,100,5,v=>v+' mg/L'],['so2Rack','SO2 at each racking',0,40,5,v=>v+' mg/L'],['so2Barrel','SO2 top-up in barrel',0,30,1,v=>v+' mg/L'],['so2BarrelDays','Barrel SO2 top-up every',20,120,5,v=>v+' days'],['so2Bottle','SO2 before bottling',0,50,5,v=>v+' mg/L'],['dryIceLbTon','Dry ice in cold soak',0,100,5,v=>v+' lb/ton'],['filterPasses','Pad filtration passes',0,3,1,v=>v?v+' before bottling':'unfiltered']]],
  ['People',[['ownerSalary','Owner salary as winemaker',0,250000,5000,money],['wmSalary','Hired winemaker salary',60000,250000,5000,money],['burden','Payroll burden',10,40,1,v=>v+'%'],['trStaff','Tasting room staff',0,500000,10000,v=>money(v)+'/yr'],['adminCost','Admin, compliance, accounting',0,250000,5000,v=>money(v)+'/yr']]],
  ['Labor',[['cellarWage','Cellar worker wage',17.13,40,0.25,v=>'$'+v.toFixed(2)+'/hr'],['seasonalWage','Harvest worker wage',17.13,35,0.25,v=>'$'+v.toFixed(2)+'/hr'],['seasonalBurden','Seasonal payroll burden',5,30,1,v=>v+'%'],['bottlePerDay','Mobile bottling line',400,3000,100,v=>n0(v)+' cases/day'],['crushCrew','Crew on a crush day',2,10,1,v=>v+' people'],['capHrs','Per pumpover or punchdown',0.1,1,0.05,v=>v.toFixed(2)+' hr'],['generalHrs','General cellar work off-season',0,60,1,v=>v+' hr/week'],['wmHarvestHrs','Winemaker hands-on, harvest',0,70,1,v=>v+' hr/week'],['wmCellarHrs','Winemaker hands-on, rest of year',0,40,1,v=>v+' hr/week'],['permHarvestHrs','Full-time crew hours in harvest',40,70,1,v=>v+' hr/week']]],
  ['Overhead',[['utilBase','Utilities base',0,80000,1000,money],['insurePct','Insurance',0,2,0.1,v=>v+'% of capital'],['maintPct','Maintenance',0,4,0.1,v=>v+'% of build and equipment'],['marketingPct','Marketing',0,15,0.5,v=>v+'% of revenue'],['dtcFeePct','Card and DTC fees',0,6,0.5,v=>v+'%'],['trLease','Tasting room lease (custom crush)',0,200000,5000,v=>money(v)+'/yr']]],
@@ -403,6 +405,7 @@ function years(){
   const cols=[['Year',r=>r.y===0?'0 build':r.y],['Cases sold',r=>n0(r.sold)],['Inventory',r=>n0(r.inv)],['Revenue',r=>money(r.rev)],['Cost of goods',r=>money(r.cogs)],['Operating costs',r=>money(r.opex)],['EBITDA',r=>money(r.ebitda),r=>r.ebitda],['Capital',r=>money(r.capex)],['Debt service',(r,f)=>money(f.interest+f.principal)],['Owner in',(r,f)=>f.equity?money(-f.equity):''],['Owner out',(r,f)=>f.dist+f.ownerSal?money(f.dist+f.ownerSal):''],['Owner cumulative',(r,f)=>money(f.cum),(r,f)=>f.cum],['Cash',(r,f)=>money(f.cash)]];
   $('years').innerHTML=`<thead><tr>${cols.map(c=>`<th>${c[0]}</th>`).join('')}</tr></thead><tbody>`+R.map((r,i)=>`<tr>${cols.map(c=>{const v=c[2]?c[2](r,F[i]):0;return `<td${cls(v)}>${c[1](r,F[i])}</td>`}).join('')}</tr>`).join('')+'</tbody>';
 }
+const CHEM_WHY={kmbs:'SO2 at crush, after ML (or after ferment), each racking, barrel top-ups and before bottling, at the rates under Cellar practice',yeast:'inoculation on must or juice volume',complex:'complex nutrient on every lot short of its YAN target',dap:'DAP to close the rest of the gap to the YAN target, capped at the federal limit of 0.96 g/L',ml:'every red, and whites set to go through ML',tartaric:'acid adjustment on must and juice',bentonite:'heat stability fining on whites',pads:'one pad per 50 gallons per pass before bottling',co2:'purging each receiving tank at every transfer',dryIce:'blanketing reds through cold soak',perc:'tank, line and press cleaning, plus a share of barrel washes',citric:'neutralizing rinse after each cleaning',sulfur:'empty barrels, about once a month',other:'enzymes, tannins, other fining agents, sanitizer, gaskets and the like'};
 function implied(){
   const m=M,lines={};m.capLines.forEach(c=>lines[c.label]=(lines[c.label]||0)+c.amt);
   const own=G.facility==='build';
@@ -419,6 +422,10 @@ function implied(){
   }
   const L=m.lab;
   eq+=hdr(`Lab program: ${L.name}, ${money(L.cost)} a year`)+`<tr><td>Lots and analyses</td><td>${L.lots} lots</td><td>${n0(L.tests)} a year</td><td></td><td>${n0(L.inTests)} run in-house, ${n0(L.outTests)} sent out at $${G.testExt}${own?'':'; the custom crush fee covers about half of routine panels'}</td></tr>`;
+  if(own){const C=m.CH,tc=m.totCases;
+    eq+=hdr(`Cellar chemicals and supplies: ${money(C.total)} a vintage, about $${(C.total/tc).toFixed(2)} a case`)+C.lines.map(l=>`<tr><td>${l.name}</td><td>${l.qty>=100?n0(l.qty):l.qty.toFixed(1)} ${l.unit}</td><td>$${l.price<1?l.price.toFixed(2):l.price.toFixed(2)}/${l.unit==='hL dosed'?'hL':l.unit}</td><td>${money(l.cost)}</td><td>${CHEM_WHY[l.k]||''}</td></tr>`).join('')+
+     (C.short.length?`<tr><td colspan="5">Nitrogen short of target even at the legal DAP limit for: ${C.short.map(s=>s.wine+' lot '+(s.lot+1)+' ('+Math.round(s.short)+' mg/L)').join(', ')}.</td></tr>`:'');}
+  eq+=hdr('Dry goods and bottling, per case')+V.map(v=>{const b=bottleParts(v,G),k=pkgOf(v);return `<tr><td>${v.name}</td><td>${GLASS[k.glass].name}; ${CLOSURE[k.closure].name.toLowerCase()}; ${CAPSULE[k.capsule].name.toLowerCase()}</td><td>$${(b.glass+b.closure+b.capsule+b.labels).toFixed(2)}/bottle</td><td>$${dryCase(v,G).toFixed(2)}/case</td><td>glass $${b.glass.toFixed(2)}, closure $${b.closure.toFixed(2)}, capsule $${b.capsule.toFixed(2)}, labels $${b.labels.toFixed(2)}; plus carton $${G.carton.toFixed(2)} and mobile bottling $${G.bottling.toFixed(2)} a case</td></tr>`}).join('');
   const r8=m.rows[Math.min(8,m.rows.length-1)].fixed;
   const LD=m.LD;if(LD.bought>0){eq+=hdr(`Land: ${LD.bought.toFixed(1)} acres at ${money(LD.priceAcre)}/acre, ${money(LD.bought*LD.priceAcre)}`)+
    (LD.planted?`<tr><td>Planted vineyard</td><td>${LD.planted.toFixed(1)} acres</td><td></td><td></td><td>tons needed divided by tons per acre, wine by wine</td></tr><tr><td>Roads, headlands, unplantable ground</td><td>${LD.unplantable.toFixed(1)} acres</td><td></td><td></td><td>only ${G.plantablePct}% of vineyard ground gets planted</td></tr>`:'')+
@@ -449,7 +456,7 @@ function syncControls(){
   document.querySelectorAll('[data-d]').forEach(b=>b.classList.toggle('on',String(G[b.dataset.d])===b.dataset.v));
   $('fc').classList.toggle('on',finView==='cash');$('fl').classList.toggle('on',finView==='loan');
   ['vineDevAcre','farmAcre','dripAcre','afPerAcre','districtAcre','waterRightAF','rawPrepAcre','plantablePct','rightTransfer','irrWellDepth','irrWellFt','liftFt','kwh'].forEach(k=>$('c_'+k).style.opacity=G.fruit==='estate'?1:.45);
-  ['suppliesCase','cellarWage','seasonalWage','seasonalBurden','bottlePerDay','crushCrew','capHrs','generalHrs','permHarvestHrs','sfPerKgal','sfPerBarrel','sfPerCaseStored','permitPct','jacketGal','storageGal','hoseFt','designFactor','lotTons','testsPerLot','labWage'].forEach(k=>$('c_'+k).style.opacity=G.facility==='build'?1:.45);
+  ['otherSupplies','cellarWage','seasonalWage','seasonalBurden','bottlePerDay','crushCrew','capHrs','generalHrs','permHarvestHrs','sfPerKgal','sfPerBarrel','sfPerCaseStored','permitPct','jacketGal','storageGal','hoseFt','designFactor','lotTons','testsPerLot','labWage'].forEach(k=>$('c_'+k).style.opacity=G.facility==='build'?1:.45);
   ['offsiteCaseMonth','offsiteInOut','offsiteAdmin'].forEach(k=>$('c_'+k).style.opacity=G.storage==='offsite'||G.facility==='custom'?1:.45);
   document.querySelectorAll('[data-d]').forEach(b=>{if(buildOnly.includes(b.dataset.d))b.disabled=G.facility!=='build';if(b.dataset.d==='water')b.disabled=G.fruit!=='estate'});
   $('c_customCase').style.opacity=G.facility==='custom'?1:.45;
@@ -462,7 +469,7 @@ function run(skipWines){
   $('cardLoan').innerHTML=l.loanAmt?card(l,'With a loan'):`<h3>With a loan</h3><div class="sub">Nothing to borrow against: no land, building or equipment in this setup.</div>`;
   if(!skipWines)renderWines();else renderWines();
   syncControls();implied();years();drawJ();drawY();FL=null;renderFlow();
-  try{localStorage.setItem('feasV11',JSON.stringify({V,G}))}catch(e){}
+  try{localStorage.setItem('feasV12',JSON.stringify({V,G}))}catch(e){}
 }
 document.addEventListener('click',e=>{
   const d=e.target.closest('[data-d]');if(d){const k=d.dataset.d,v=d.dataset.v;G[k]=v==='true'?true:v==='false'?false:v;run();return}
@@ -510,7 +517,7 @@ function lockNote(){$('lockNote').innerHTML=locked?`<b>Date locked on ${fdate(cu
 });
 document.addEventListener('keydown',e=>{if(tab==='flow'&&locked&&e.key==='Escape')setLock(false)});
 const ro=new ResizeObserver(()=>{drawJ();drawY();if(tab==='flow')drawFlow()});ro.observe($('sJ'));ro.observe($('sY'));ro.observe($('sF'));ro.observe($('sL'));
-try{const s=JSON.parse(localStorage.getItem('feasV11'));if(s&&Array.isArray(s.V)&&s.G){V=s.V;G={...G,...s.G}}}catch(e){}
+try{const s=JSON.parse(localStorage.getItem('feasV12'));if(s&&Array.isArray(s.V)&&s.G){V=s.V;G={...G,...s.G}}}catch(e){}
 run();setTab();
 }
 </script>

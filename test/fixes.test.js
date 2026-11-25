@@ -42,7 +42,9 @@ test('3. red lot cooling comes from the jacket on its tank', () => {
 });
 
 test('4. a stuck fermentation is flagged, not pressed on a nominal day', () => {
-  const V = [{ ...VDEF[3], brix: 32 }], m = run({}, V);
+  // a low-nitrogen must with no nutrient additions sticks; the default nutrient plan carries the same must to dryness
+  const V = [{ ...VDEF[3], brix: 30 }], starved = { yanHarvest: 80, yanTarget21: 60, yanPerBrix: 0, complexRate: 0 }, m = run(starved, V);
+  assert.strictEqual(run({ yanHarvest: 80 }, V).FL.exceptions.filter(e => e.process === 'Primary fermentation').length, 0, 'nutrients rescue it');
   const stuck = m.FL.exceptions.filter(e => e.process === 'Primary fermentation');
   assert.ok(stuck.length > 0 && stuck.every(e => e.cls === 'method'));
   for (const l of m.FL.lots) {
