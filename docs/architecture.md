@@ -121,6 +121,10 @@ The ledger and scheduler should not be built on these until they are confirmed. 
 
 The owner wants several wines from one variety (a reserve, a single vineyard bottling) and blends across varieties. Today a wine is a variety: its lots, presets and costs all hang off one row. The ledger should separate the two. A lot is fruit from a source (variety, vineyard or block, pick) and carries the physical history. A wine is a finished product that draws gallons from one or more lots, with its own barrel regime, bottling, package, release and price. Reserve selection is then a draw of the best lots at blending, and a blend is a draw across varieties. Lots are made first and assigned to wines at blending, so the lot ledger has to come before wines-as-blends, and costs (fruit, chemicals, barrels) follow the gallons from lot to wine.
 
+### Bottling during harvest (noted November 2026, no change yet)
+
+At default, Chardonnay bottles 12 months after a fixed mid-October harvest date, which puts its bottling on October 15 and 16, in the middle of crush. Those two days run 42 and 56 crew hours. Real wineries usually move bottling a little earlier or wait until after harvest, though bottling during harvest does sometimes happen. The cause is that bottling dates are counted in months from a fixed harvest date, with no notion of blackout windows. The step 5 scheduler should treat harvest as a soft blackout for bottling: pull it forward or push it past the last press, and if it has to stay inside harvest, report it as an exception (feasible with overtime or extra shifts) rather than doing it quietly.
+
 ## 9. Noted for the deferred sales work
 
 Pricing is per bottle in the model, but real pricing differs by bottle and by case (case discounts), and the year includes club-release discounts and end-of-season sales beyond the flat club discount. Nothing to build yet; the sales model should carry a price schedule by channel and season rather than one net factor.
