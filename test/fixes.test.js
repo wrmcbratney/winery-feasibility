@@ -12,23 +12,26 @@ const reds = m => m.FL.lots.filter(l => l.color === 'red');
 
 test('1. sorting choice reaches the lot simulation and the crush line', () => {
   for (const [sort, rate] of [['hand', 2.5], ['optical', 6], ['none', 8]]) {
-    const m = run({ sort });
+    const m = run({ sort }), PD = m.FL.demand;
     assert.strictEqual(m.FL.winery.sort, sort);
-    for (const l of m.FL.lots) {
-      const setup = l.color === 'red' ? 1.5 : 0.5, want = l.picks.reduce((a, k) => a + k.tons / rate + setup, 0);
-      assert.ok(Math.abs(l.crushHrs - want) < 1e-9, `${sort} ${l.name}`);
+    assert.strictEqual(PD.rate, rate);
+    for (const x of PD.days) {
+      const want = x.redTons / rate + (sort === 'none' ? 0 : x.whiteTons / rate);
+      assert.ok(Math.abs(x.lineHrs - want) < 1e-9, `${sort} day ${x.day}`);
     }
   }
 });
 
-test('2. press loads and press hours use the winery press', () => {
+test('2. press loads and press hours use the winery press, reds and whites on the same press', () => {
   for (const f of [0.5, 1, 4]) {
-    const m = run({}, scale(VDEF, f)), t = m.FL.winery.press.tons;
+    const m = run({}, scale(VDEF, f)), t = m.FL.winery.press.tons, PD = m.FL.demand;
     assert.strictEqual(m.sz.items.find(i => i.k === 'Membrane press').unit, t + ' ton');
-    for (const l of m.FL.lots) {
-      const loads = l.color === 'red' ? Math.ceil(l.tons / t - 1e-9) : l.picks.reduce((a, k) => a + Math.ceil(k.tons / t - 1e-9), 0);
-      assert.strictEqual(l.loads, loads, `${f}x ${l.name} loads`);
-      assert.ok(Math.abs(l.pressHrs - l.loads * PRESS_CYCLE_HRS[l.color]) < 1e-9, `${f}x ${l.name} hours`);
+    for (const x of PD.days) {
+      const white = x.deliveries.filter(d => d.color === 'white').reduce((a, d) => a + Math.ceil(d.tons / t - 1e-9), 0);
+      const red = m.FL.lots.filter(l => l.color === 'red' && l.pressDOY === x.day).reduce((a, l) => a + Math.ceil(l.tons / t - 1e-9), 0);
+      assert.strictEqual(x.whiteLoads, white, `${f}x day ${x.day} white loads`);
+      assert.strictEqual(x.redLoads, red, `${f}x day ${x.day} red loads`);
+      assert.ok(Math.abs(x.pressRunHrs - (white * PRESS_CYCLE_HRS.white + red * PRESS_CYCLE_HRS.red)) < 1e-9);
     }
   }
 });

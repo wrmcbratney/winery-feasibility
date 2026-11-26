@@ -169,3 +169,106 @@ Two effects of bigger lots that are artifacts rather than findings, to fix in la
 
 - One tank size per role puts small lots in oversized tanks; with fermentors now a chosen size, the cost of that choice is visible rather than hidden. A small 12-ton purchase spread over 10 days at a 2.5-day spread fills one tank slowly; a tighter spread per wine is how to say a small block is picked in one go. Step 3's mixed fleets and a fermentor-size sweep address the rest.
 - Pumpover time is a fixed 0.33 hours per lot whatever its volume, so cellar labor falls about $12,600 a year at default partly because lots got bigger. Cap management time should scale with tank volume; it belongs with the owner's task times.
+
+## 14. Harvest as a physical process (November 2026)
+
+The harvest creates the physical problem the winery must solve. This round made harvest arrival a model of its own and fixed the places where the first version created or lost fruit, double counted bins, or disagreed with itself. Branch `harvest-arrival`.
+
+### Stages and modules
+
+`src/harvest.js` keeps four stages apart, and everything downstream consumes deliveries, never the curve:
+
+1. **Expected arrival.** A curve per fruit source. Today a source is one wine row named for its variety (`id` like `3:Cabernet Sauvignon`); later it becomes a vineyard or block, and the lot ledger will map sources to lots to wines. Each day gets the area under the normal curve for that day, rescaled so the days sum exactly to the source's tons.
+2. **Deliveries.** What a grower would bring. Any generated day under the minimum delivery (0.25 tons) hands its fruit to the neighboring day toward the middle of the curve until every day carries the minimum; mass is kept and each delivery records where its fruit came from (`from`), so the timing change is visible (1.23 tons moved at default). A manual schedule (`schedule` on a wine) is taken as given, smaller deliveries, gaps and dates past the new year included. Normality lives only in stage 1.
+3. **Receiving.** A picking bin is a container (0.5 tons) holding fruit, not a unit of fruit: a delivery is some full bins and at most one partial bin, counted once at receiving. When a delivery is divided between fermentors, each portion carries its share of the delivery's bins, so dividing it adds none.
+4. **Filling.** Deliveries go into fermentors under the color's policy (below). One filled fermentor is one lot.
+
+`src/processing.js` holds the one account of processing demand per day (next section). `src/flow.js` builds lots from fills and lays them on the calendar.
+
+### Fill policy: semantics
+
+Each parameter, what it means, and whether it is implemented. Basis says what kind of limit it is: physical (cannot be done), practice (a preferred way of working), warning (needs the winemaker's review) or authorization (allowed only if the winemaker says so).
+
+| Parameter | Meaning | Default | Basis | Status |
+|---|---|---|---|---|
+| Cold soak program | Days from a red fermentor's first fruit to inoculation, the wine's setting | per wine (Cabernet 3, Pinot 4) | practice | implemented; filling time does not extend it |
+| Material exposure | How long each portion of fruit actually sat before inoculation | recorded per lot (first fruit, inoculation, fruit added after inoculation) | n/a | recorded, not yet shown per portion |
+| Normal addition window | Fresh fruit (red) or juice (white) may go in until this long after inoculation | 48 hours | practice | implemented; the fermentor closes at the window, never held open |
+| Later additions | Beyond the normal window | not allowed unless raised | authorization | raising the window is the authorization for now |
+| Preferred minimum fill (red) | Below this a fermentor is used inefficiently | 50% of working volume | practice | reported as feasible with rescheduling |
+| Review threshold (red) | Below this cap management needs the winemaker's review | 33% of working volume | warning | reported; never declared infeasible |
+| Minimum fill (white) | No cap to manage; a thin fill is tank use only | same levels for now | practice | reported as tank use only |
+| White settling | Juice settles before inoculation | 48 hours | practice | implemented |
+| White holding warning | Juice held longer than this before inoculation | 96 hours | warning | implemented |
+| Barrel-fermented whites | Each day's settled juice goes to barrel | n/a | practice | implemented (no juice waits past its settle) |
+| Maximum time from harvest to processing | Fruit holding in bins before crush or press | not yet | physical and practice | deferred: fruit is processed the day it arrives; holding is a scheduler remedy (step 6) |
+| Fruit temperature at arrival, cooling | Heat removed from incoming fruit | not yet | physical | deferred to thermal (step 5) |
+| Spontaneous start before inoculation | Risk when warm fruit waits | not yet | warning | deferred; needs fruit temperature |
+
+When a policy cannot be met, the model reports it with options (a smaller vessel, accepting the partial fill, moving a pick within its authorized window, holding fruit cold, authorizing a later addition) and never picks one itself. The earlier version held a fermentor open past its window to reach 50%; that is gone, and with it the silent merge of a small last fill into the tank before it.
+
+### Material, reservation and the fermentor floor
+
+A fermentor is now two things in the flow: a **reservation** from its first fruit to the press (it counts as a vessel in use the whole time, however full) and **material** records, one per delivery portion, each starting the day that fruit arrives. The cellar lanes show material, so a filling fermentor visibly fills; vessel counts follow reservations. Working volume is the fermentor less headspace (20% red, 10% white). The theoretical floor is the material in fermentors over working volume, as if it could be split freely across tanks; the vessel count under real fills and policies is reported beside it and can only be higher.
+
+Labor, transfers, cleaning and gas read each lot's operational stages (fermentor, lot tank, barrel, blend), not the material records, so a fermentor filled over five days is still one fermentor to pump over.
+
+### Biology during filling: interim and future interface
+
+Interim: a red ferment is simulated from its first fruit with the cold soak counted from that fruit, and every addition is treated as present from the start. Later fruit actually has less skin contact and enters a ferment already under way. The fill history (each portion's day and tons, inoculation, tons added after inoculation) is kept on the lot so this can be replaced, not reconstructed.
+
+Future interface for `core.js`, to build with the white kinetics (step 3): `simulate(p)` gains `p.additions = [{t, kg, gal, brix, yan, tempF, skins}]`, each merged into the state at time `t` (mass, volume, sugar, nitrogen, ethanol dilution, yeast dilution, heat balance), with inoculation as its own event (`p.inoculate = {t, cells}`) distinct from the start of active fermentation, and fruit temperature and pre-inoculation holding carried from receiving. Restarting a stuck ferment from a healthy one fits the same interface and stays deferred.
+
+### One account of processing demand
+
+`processingDemand` builds, per day: deliveries and bins received; crush line hours (red tons, and white tons when sorting) at the line rate; white press loads per delivery; red press loads on each fermentor's press day; press run hours, changeovers between wines (0.5 h each) and cleaning (1 h per press day); the crew's receiving hours; and how far the day runs over the crush window (6 hours) or the press day (16 hours less cleaning). Reds and whites share the press. The overtime check, the labor calendar, the equipment calendar and the harvest chart all read it; tests hold them equal. It is demand: it says what the plan asks and where that exceeds the practical window, not what got done. Deciding what waits is the scheduler's job.
+
+### VEN 235 benchmark
+
+`test/ven235.js` transcribes the workbook's inputs (the workbook itself is not in the repo). Fed the workbook's own once-a-day curve samples, the method reproduces its results exactly: 47.01 fermentors at the peak on day 25, and 4.81 tons an hour at the busiest crush. Fed this model's integrated arrival, it gives 46.71 and 4.76, within 1%: the difference is sampling against integrating, not an error. The later file version (2,500-liter fermentors, ferment days from the temperature formula) gives about 70 fermentors; its own result was not recovered. Uncertain and documented, not resolved: the units of the workbook's tons (most likely short tons), whether 480 liters per ton was free run only, and which version is final.
+
+Not yet benchmarked: the model's own fermentor count under the workbook's simplified assumptions (fixed tank times, 10% headspace, one fermentor size), which needs a fixed-duration option for lots; that belongs with the ledger.
+
+Kinetics against the workbook's empirical ferment time (55 e^(-0.07 T)), using the red engine at 23 Brix as a stand-in for juice:
+
+| T (C) | 10 | 12 | 15 | 18 | 20 | 22 | 25 | 28 | 30 |
+|---|---|---|---|---|---|---|---|---|---|
+| Simulated days to dryness | 17.6 | 15.6 | 13.2 | 11.1 | 10.1 | 9.3 | 8.4 | 7.7 | 7.4 |
+| Empirical days | 28 | 24 | 20 | 16 | 14 | 12 | 10 | 8 | 7 |
+
+They agree at red temperatures and the engine runs 30 to 37% fast at white temperatures: its temperature sensitivity is too weak in the cold. To address with the white kinetics (step 3).
+
+### What the defaults now say
+
+At 4,000 cases the harvest is 65.67 tons in 42 deliveries over 50 days. Under the owner's policies the fruit fills 10 fermentors, 6 of them reported as thin (the shoulders of each curve, and whites whose 11-day spread outruns a 4-day window), two below the 33% review level (Pinot fermentor 2 at 27%, Cabernet fermentor 3 at 11%). Fermentor policy and harvest spread now move capital more than anything else at this scale:
+
+| Setting | Fermentors | Capex | Cash IRR |
+|---|---|---|---|
+| Owner's policy (48-hour additions) | 4 red, 6 white | $4.52M | 8.77% |
+| Additions authorized to 120 hours | 3 red, 4 white | $4.01M | 9.78% |
+| Whites picked over a 1-day spread | 4 red, 3 white | $4.23M | 9.39% |
+| Every variety over a 1-day spread | 3 red, 3 white | $3.94M | 10.03% |
+| 1,500-gallon fermentors | 5 red, 6 white | $3.94M | 9.88% |
+
+The spreads came from a 345-ton class harvest; for blocks of 12 to 27 tons they are probably too wide. That, and a mixed fleet, are the levers.
+
+### Sequence
+
+The proposed order holds, with these dependencies:
+
+1. Harvest, material quantities and fill policies: this round.
+2. Material ledger and lineage. Sources to lots to wines here (reserves, single vineyard, blends), with source ids already on every delivery and lot. Also the fixed-duration option the workbook benchmark needs.
+3. White kinetics and process differentiation, with the additions interface above and the cold-temperature calibration.
+4. Individual vessels and mixed fleets. The sensitivity table makes this the most valuable capital lever.
+5. Thermal engineering. Needs 3 (white heat) and 4 (jacket per vessel), and fruit temperature at receiving.
+6. Constrained scheduling. Resolves what 1 only reports (fruit holding, which fermentor, what waits for the press).
+7. Deterministic comparison of equipment configurations (one larger press or two, another shift, fleet mixes), consuming the demand table; then optimization.
+
+Harvest scenarios (compression, overlap, shifted or converging dates, more fruit on unchanged timing) need only a scenario object over stage 1 and can come at any point; quantity and timing are already separate inputs.
+
+### Questions for the winemaker
+
+- Spreads for small purchases: should a 12-ton block keep the class's 2.5-day spread, or come in over one or two days?
+- Whites: is 48 hours the right normal addition window for white juice into an inoculated tank, or is it routinely longer?
+- Whites below 50%: should thin white fills be reported at all, or only red ones?
+- Preferred delivery of 0.5 tons: should generated schedules aim for it (consolidating more), with 0.25 tons as the floor?

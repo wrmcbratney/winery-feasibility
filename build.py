@@ -10,7 +10,7 @@ ROOT = pathlib.Path(__file__).parent
 SRC = ROOT / "src"
 strip = lambda s: re.sub(r"^if\(typeof module!=='undefined'\)module\.exports=.*$", "", s, flags=re.M)
 page = (SRC / "index.src.html").read_text()
-for token, name in [("/*CORE*/", "core.js"), ("/*EXC*/", "exceptions.js"), ("/*SUP*/", "supplies.js"), ("/*WINERY*/", "winery.js"), ("/*FIN*/", "fin.js"), ("/*SRC*/", "sources.js"), ("/*FLOW*/", "flow.js")]:
+for token, name in [("/*CORE*/", "core.js"), ("/*EXC*/", "exceptions.js"), ("/*SUP*/", "supplies.js"), ("/*WINERY*/", "winery.js"), ("/*HARV*/", "harvest.js"), ("/*PROC*/", "processing.js"), ("/*FIN*/", "fin.js"), ("/*SRC*/", "sources.js"), ("/*FLOW*/", "flow.js")]:
     assert token in page, f"missing placeholder {token}"
     page = page.replace(token, strip((SRC / name).read_text()))
 (ROOT / "dist").mkdir(exist_ok=True)

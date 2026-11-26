@@ -54,7 +54,7 @@ function chemicals(FL,V,G){
     addQ('tartaric',must*L_GAL*(red?G.acidRed:G.acidWhite)/1000,wi);
     so2(G.so2Crush,must,wi);
     if(red&&(v.soak??0)>0)addQ('dryIce',L.tons*G.dryIceLbTon,wi);
-    const ws=S.filter(s=>!s.ev&&s.loc!=='bottled').sort((a,b)=>a.a-b.a);
+    const ws=(L.stages||S.filter(s=>!s.ev&&s.loc!=='bottled')).slice().sort((a,b)=>a.a-b.a);
     const after=ws.find(s=>s.loc==='storage'||s.loc==='barrel'), wineGal=after?after.gal:must*0.94;
     if(v.ml??red)addQ('ml',wineGal*L_GAL/100,wi);
     so2(G.so2PostAF,wineGal,wi);
@@ -62,7 +62,7 @@ function chemicals(FL,V,G){
     for(let i=1;i<ws.length;i++){const fr=ws[i-1],to=ws[i];
       if(fr.loc!=='redTank'&&fr.loc!=='whiteTank')so2(G.so2Rack,to.gal,wi);
       if(TANK_LOCS.includes(to.loc))addQ('co2',to.gal/7.48*0.114*G.purgeVolumes,wi);
-      if(TANK_LOCS.includes(fr.loc))clean(fr.gal,wi);
+      if(TANK_LOCS.includes(fr.loc))clean(fr.tankGal||fr.gal,wi);
       if(fr.loc==='barrel')addQ('perc',fr.units*G.barrelPercShare*5*G.percGpg/1000,wi);}
     S.filter(s=>s.loc==='barrel').forEach(s=>so2(G.so2Barrel,s.gal*Math.floor((s.b-s.a)/G.so2BarrelDays),wi));
     const blend=S.find(s=>s.loc==='blend');

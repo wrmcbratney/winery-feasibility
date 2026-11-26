@@ -43,7 +43,7 @@ const GDEF={
  customCase:45, capHrs:0.33, crushCrew:4, bottlePerDay:1200, shiftHrs:10, generalHrs:20, harvestWeeks:8, wmHarvestHrs:45, wmCellarHrs:15, permHarvestHrs:55, cellarWage:24, seasonalWage:20, seasonalBurden:15, tankLeaseCustom:0,
  labelSet:0.30, carton:2.5, bottling:3.5,
  wmSalary:120000, burden:25, ownerSalary:100000, adminCost:60000, trStaff:190000, trLease:60000,
- propTaxPct:1, offsiteCaseMonth:0.35, offsiteInOut:1, offsiteAdmin:3000, testsPerLot:15, testExt:40, lotTons:30, redFermGal:3000, whiteFermGal:3000, fillDays:2, minFillPct:50, workDayHrs:16, crushShifts:1, crushShiftHrs:8, crushSetupHrs:2, harvestSpread:1, labWage:30,
+ propTaxPct:1, offsiteCaseMonth:0.35, offsiteInOut:1, offsiteAdmin:3000, testsPerLot:15, testExt:40, lotTons:30, redFermGal:3000, whiteFermGal:3000, minDelivery:0.25, binTons:0.5, addWindowHrs:48, redPrefMinFill:50, redWarnMinFill:33, whiteSettleHrs:48, whiteHoldWarnHrs:96, pressCleanHrs:1, pressChangeHrs:0.5, workDayHrs:16, crushShifts:1, crushShiftHrs:8, crushSetupHrs:2, harvestSpread:1, labWage:30,
  utilBase:20000, utilCase:1.5, insurePct:0.5, maintPct:1.5, marketingPct:6, dtcFeePct:3,
  shareTR:[42,28,30], shareNoTR:[10,15,75], clubDisc:15, wholesaleFactor:50,
  ramp:[35,55,75,90,100],
