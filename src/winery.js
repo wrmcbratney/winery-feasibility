@@ -10,31 +10,20 @@ const _S=typeof nutrientPlan==='function'?{nutrientPlan}:require('./supplies.js'
 function sortRate(sort){return (typeof SORT_RATE!=='undefined'?SORT_RATE:require('./core.js').SORT_RATE)[sort]??1e9}
 // Hours the crush line runs in a day: crush shifts less setup and cleanup (VEN 235: one 8-hour shift less 2 hours).
 function crushHoursPerDay(G){return Math.max(1,G.crushShifts*G.crushShiftHrs-G.crushSetupHrs)}
-// The most fruit one day can take for a given color. Reds are limited by the crush line and sorting inside the crush
-// window; whites go whole cluster to the press, which can cycle through the working day, and through sorting if any.
-function pickCapTons(color,W,G){
-  const hrs=crushHoursPerDay(G), sr=sortRate(W.sort);
-  if(color==='red')return hrs*Math.min(CRUSH_RATE,sr);
-  const press=Math.floor(G.workDayHrs/PRESS_CYCLE_HRS.white)*W.press.tons;
-  return W.sort&&W.sort!=='none'?Math.min(press,hrs*sr):press;
-}
-// Inverse standard normal (Acklam), for placing picks on a variety's arrival curve.
-function normInv(p){
-  const a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.357751867269,-30.66479806614716,2.506628277459239],
-   b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155211027],
-   c=[-0.007784894002430293,-0.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783],
-   d=[0.007784695709041462,0.3224671290700398,2.445134137142996,3.754408661907416],q=Math.min(p,1-p);
-  let x;
-  if(q<0.02425){const r=Math.sqrt(-2*Math.log(q));x=(((((c[0]*r+c[1])*r+c[2])*r+c[3])*r+c[4])*r+c[5])/((((d[0]*r+d[1])*r+d[2])*r+d[3])*r+1)}
-  else{const r=p-0.5,s=r*r;x=(((((a[0]*s+a[1])*s+a[2])*s+a[3])*s+a[4])*s+a[5])*r/(((((b[0]*s+b[1])*s+b[2])*s+b[3])*s+b[4])*s+1);return x}
-  return p<0.5?x:-x;
-}
-// Pick days for a variety: its tonnage arrives on a normal curve (mean pick day, spread in days, VEN 235), cut into n
-// equal slices; each pick sits at the middle of its slice. Deterministic, so a stress harvest is a change of mean or spread.
-function pickDays(v,n,G){
-  const sd=(v.pickSD??2)*(G.harvestSpread??1),out=[];
-  for(let k=0;k<n;k++){let d=Math.round((v.pick??270)+(n>1?sd*normInv((k+0.5)/n):0));if(k&&d<=out[k-1])d=out[k-1]+1;out.push(d)}
-  return out;
+// Standard normal CDF (Abramowitz and Stegun 7.1.26, error under 1.5e-7).
+function normCdf(x){const z=Math.abs(x)/Math.SQRT2,t=1/(1+0.3275911*z),y=1-((((1.061405429*t-1.453152027)*t+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-z*z);return x>=0?(1+y)/2:(1-y)/2}
+// Daily harvest for a variety (VEN 235): its tons arrive on a normal curve around the mean pick day. Each day gets the
+// area under the curve for that day, in half-ton steps (the picking bin), with leftover halves going to the days that
+// lost most to rounding so the season total holds. Deterministic: a stress harvest is a change of mean or spread.
+function dailyArrival(v,tons,G){
+  const mu=v.pick??270,sd=(v.pickSD??2)*(G.harvestSpread??1),U=Math.max(1,Math.round(tons/0.5));
+  if(!(sd>0))return [{day:Math.round(mu),tons:U*0.5}];
+  const d0=Math.floor(mu-4*sd),d1=Math.ceil(mu+4*sd),raw=[];
+  for(let d=d0;d<=d1;d++)raw.push({day:d,u:U*(normCdf((d+0.5-mu)/sd)-normCdf((d-0.5-mu)/sd))});
+  const tot=raw.reduce((a,r)=>a+r.u,0);raw.forEach(r=>{r.u*=U/tot;r.n=Math.floor(r.u);r.rem=r.u-r.n});
+  let left=U-raw.reduce((a,r)=>a+r.n,0);
+  [...raw].sort((x,y)=>y.rem-x.rem||Math.abs(x.day-mu)-Math.abs(y.day-mu)).forEach(r=>{if(left>0){r.n++;left--}});
+  return raw.filter(r=>r.n>0).map(r=>({day:r.day,tons:r.n*0.5}));
 }
 function pressFor(allTons){return PRESSES.find(p=>allTons<=p.upTo)}
 function crushHours(tons,color,sort){return tons/Math.min(CRUSH_RATE,sortRate(sort))+CRUSH_SETUP_HRS[color]}
@@ -57,4 +46,4 @@ function lotParams(v,tons,pick,W){
    malic:2.5,ml:'seq',mlHeat:false,mlHeatF:68,winterF:52,summerF:68,barrelF:58,harvestDOY:pick,pressLoad:W.press.tons,pressCycle:PRESS_CYCLE_HRS.red,
    binTons:0.5,crushRate:CRUSH_RATE,setupHrs:CRUSH_SETUP_HRS.red,sort:W.sort,mustGal:180,headspace:20,freeRun:115,pressGal:45,leesPct:4,pressHandling:'blend',barrelRule:'spring',settleDays:10};
 }
-if(typeof module!=='undefined')module.exports={PRESSES,PRESS_CYCLE_HRS,SORT_LABOR,CRUSH_RATE,sortRate,crushHoursPerDay,pickCapTons,normInv,pickDays,pressFor,crushHours,jacketBTU,wineryFor,lotParams};
+if(typeof module!=='undefined')module.exports={PRESSES,PRESS_CYCLE_HRS,SORT_LABOR,CRUSH_RATE,sortRate,crushHoursPerDay,normCdf,dailyArrival,pressFor,crushHours,jacketBTU,wineryFor,lotParams};

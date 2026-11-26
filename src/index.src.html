@@ -94,8 +94,13 @@ kbd{font:12px/1 ui-monospace,monospace;border:1px solid var(--rule);border-botto
       <div class="seg" style="max-width:260px;flex:0 1 240px"><button data-unit="gal">Gallons</button><button data-unit="ves">Vessels</button></div>
     </div>
     <p class="lede" id="flowLede" style="margin-top:6px"></p>
+    <h3 style="margin-top:14px">Harvest by day</h3>
+    <p class="dlab" id="harvLede" style="margin:2px 0 4px"></p>
+    <div class="now" id="harvNow" aria-live="polite"></div>
     <div class="flowgrid">
       <div>
+        <div class="fig" style="min-height:220px"><svg id="sH" role="img" aria-label="Tons picked per day by variety, cumulative tons, and one day of crush and press capacity"></svg></div>
+        <div class="legend" id="harvLegend" style="margin-bottom:10px"></div>
         <div class="fig lanes"><svg id="sF" role="img" aria-label="Gallons by cellar location over time, with capacity lines"></svg></div>
         <input type="range" id="scrub" min="0" max="364" step="1" aria-label="Date">
         <div class="legend"><span><i style="background:var(--ink);height:2px"></i>Installed capacity (dashed)</span><span><i style="background:var(--bad)"></i>Over capacity</span><span id="flowNote"></span><span><kbd>&larr;</kbd> <kbd>&rarr;</kbd> a day, with <kbd>shift</kbd> a week</span><span id="lockNote" aria-live="polite"></span></div>
@@ -196,6 +201,7 @@ kbd{font:12px/1 ui-monospace,monospace;border:1px solid var(--rule);border-botto
 /*FLOW*/
 let V=deepCopy(VDEF), G=deepCopy(GDEF), M=null, finView='cash', tab='money', FL=null, rng='harvest', cur=75, unit='gal';
 const TCOL={crush:'light-dark(#6f7a2a,#bcc86a)',press:'light-dark(#8c7a66,#b7a593)',cap:'var(--wine)',checks:'light-dark(#c2577a,#e892ad)',moves:'var(--loan)',barrel:'var(--oak)',bottling:'var(--good)',cases:'light-dark(#2f8f8a,#7fd0c9)',general:'light-dark(#9a9a94,#6f6f69)'};
+const VCOL=['light-dark(#a8820f,#e5c25a)','light-dark(#6f7a2a,#bcc86a)','var(--wine)','light-dark(#4a5d8a,#9aaee0)','var(--oak)','light-dark(#2f8f8a,#7fd0c9)','light-dark(#c2577a,#e892ad)','var(--loan)'];
 const LCOL={pad:'light-dark(#6f7a2a,#bcc86a)',press:'light-dark(#8c7a66,#b7a593)',redTank:'var(--wine)',whiteTank:'light-dark(#a8820f,#e5c25a)',storage:'var(--loan)',blend:'light-dark(#4a5d8a,#9aaee0)',barrel:'var(--oak)',bottled:'var(--good)'};
 const fdate=d=>{const t=new Date(2001,7,1+Math.round(d)),y=t.getFullYear()-2001;return t.toLocaleDateString('en-US',{month:'short',day:'numeric'})+(y===0?', harvest year':y===1?', year after':`, harvest +${y}`)};
 const gal=v=>v>=1e4?(v/1000).toFixed(1)+'k':n0(v);
@@ -220,12 +226,48 @@ function drawFlow(){
     g+=`<text x="${m.l+4}" y="${y0+13}" font-size="13" font-weight="600" fill="var(--ink)">${name}</text><text x="${W-m.r-4}" y="${y0+13}" font-size="12" text-anchor="end" fill="${cap&&pk>cap?'var(--bad)':'var(--mute)'}">${unit==='ves'?`peak ${fmtU(k,pk)}${cap?` of ${n0(cap)}`:''} ${uName(k,cap||pk)}${FL.size[k]?` (${n0(FL.size[k])} gal)`:''}${k==='pad'||k==='press'?' a day':''}`:`peak ${gal(pk)} gal${cap?` of ${gal(cap)}`:k==='pad'||k==='press'?' a day':''}`}</text>`;
   });
   const step=rng==='harvest'?1:rng==='year'?1:3;
-  for(let mo=0;mo<60;mo+=step){const d=Math.round((new Date(2001,7+mo,1)-new Date(2001,7,1))/864e5);if(d<d0||d>d1)continue;const t=new Date(2001,7+mo,1);
+  for(let mo=0;mo<Math.ceil(FL.D/30.44);mo+=step){const d=Math.round((new Date(2001,7+mo,1)-new Date(2001,7,1))/864e5);if(d<d0||d>d1)continue;const t=new Date(2001,7+mo,1);
     g+=`<line x1="${x(d)}" x2="${x(d)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--rule)" stroke-opacity="0.6"/><text x="${x(d)+3}" y="${H-8}" font-size="12" fill="var(--mute)">${t.toLocaleDateString('en-US',{month:'short'})}${t.getMonth()<step||mo===0?" '"+String(t.getFullYear()-2001+26).padStart(2,'0'):''}</text>`}
   g+=`<line class="cur" data-x0="${m.l}" data-x1="${W-m.r}" x1="${x(cur)}" x2="${x(cur)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink)" stroke-width="2"/>`;
   s.innerHTML=g;
   const sc=$('scrub');sc.min=d0;sc.max=d1;sc.value=cur;
-  drawGantt(d0,d1);drawWork(d0,d1);snap();
+  drawGantt(d0,d1);drawWork(d0,d1);drawHarvest(d0,d1);snap();
+}
+// Harvest by day, as in the VEN 235 sheets: tons picked each day stacked by wine, the season's cumulative tons, and how
+// much one day's crush window (reds) and press day (whites) can take.
+function harvCaps(){const W=FL.winery,rate=Math.min(CRUSH_RATE,SORT_RATE[G.sort]??1e9);return {red:FL.crushHrsDay*rate,white:Math.floor(G.workDayHrs/PRESS_CYCLE_HRS.white)*W.press.tons}}
+function drawHarvest(d0,d1){
+  const s=$('sH'),Wd=s.clientWidth,H=s.clientHeight;if(!FL||!Wd)return;
+  const m={l:8,r:12,t:10,b:24},x=d=>m.l+(d-d0)/(d1-d0)*(Wd-m.l-m.r),days={},total=FL.harvest.reduce((a,h)=>a+h.tons,0);
+  FL.harvest.forEach(h=>{const d=h.day-AUG1;(days[d]=days[d]||V.map(()=>0))[h.wi]+=h.tons});
+  const caps=harvCaps();let top=Math.max(1,...Object.values(days).map(a=>a.reduce((p,q)=>p+q,0)));
+  const capShow=[['red',caps.red,'Red crush, one window'],['white',caps.white,'White press, one day']].filter(c=>c[1]<top*3);
+  capShow.forEach(c=>top=Math.max(top,c[1]));top*=1.12;
+  const yv=v=>H-m.b-v/top*(H-m.t-m.b);let g='';
+  const step=top>60?20:top>24?10:top>10?5:top>4?2:1;
+  for(let v=0;v<=top;v+=step)g+=`<line x1="${m.l}" x2="${Wd-m.r}" y1="${yv(v)}" y2="${yv(v)}" stroke="var(--rule)"/>${v?`<text x="${m.l+2}" y="${yv(v)-3}" font-size="11" fill="var(--mute)">${v} t</text>`:''}`;
+  const bw=Math.max(1,(x(d0+1)-x(d0))*0.82);
+  Object.entries(days).forEach(([d,a])=>{d=+d;if(d<d0||d>=d1)return;let b=0;a.forEach((t,i)=>{if(!t)return;g+=`<rect x="${(x(d)+(x(d+1)-x(d)-bw)/2).toFixed(1)}" y="${yv(b+t).toFixed(1)}" width="${bw.toFixed(1)}" height="${(yv(b)-yv(b+t)).toFixed(1)}" fill="${VCOL[i%VCOL.length]}"><title>${fdate(d).split(',')[0]}: ${t.toFixed(1)} tons of ${V[i].name}</title></rect>`;b+=t})});
+  capShow.forEach(([k,c,name])=>{g+=`<line x1="${m.l}" x2="${Wd-m.r}" y1="${yv(c)}" y2="${yv(c)}" stroke="var(--ink)" stroke-dasharray="5 4" stroke-width="1.2"/><text x="${Wd-m.r-4}" y="${yv(c)-4}" font-size="12" text-anchor="end" fill="var(--mute)">${name}: ${c.toFixed(0)} tons</text>`});
+  // cumulative share of the season, against the right of the plot
+  let cum=0,path='';const keys=Object.keys(days).map(Number).sort((a,b)=>a-b);
+  for(let d=d0;d<=d1;d++){if(days[d])cum+=days[d].reduce((p,q)=>p+q,0);const y=H-m.b-(cum/total)*(H-m.t-m.b);path+=`${d===d0?'M':'L'}${x(d).toFixed(1)},${y.toFixed(1)}`}
+  if(total)g+=`<path d="${path}" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-opacity="0.55"/><text x="${Wd-m.r-4}" y="${m.t+12}" font-size="12" text-anchor="end" fill="var(--mute)">Line: share of the ${total.toFixed(1)}-ton season picked</text>`;
+  const stepM=rng==='vintage'?3:1;
+  for(let mo=0;mo<Math.ceil(FL.D/30.44);mo+=stepM){const d=Math.round((new Date(2001,7+mo,1)-new Date(2001,7,1))/864e5);if(d<d0||d>d1)continue;const t=new Date(2001,7+mo,1);g+=`<text x="${x(d)+3}" y="${H-8}" font-size="12" fill="var(--mute)">${t.toLocaleDateString('en-US',{month:'short'})}</text>`}
+  g+=`<line class="cur" data-x0="${m.l}" data-x1="${Wd-m.r}" x1="${x(cur)}" x2="${x(cur)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink)" stroke-width="2"/>`;
+  s.innerHTML=g;
+  const first=keys[0],last=keys[keys.length-1],peak=keys.reduce((a,d)=>days[d].reduce((p,q)=>p+q,0)>days[a].reduce((p,q)=>p+q,0)?d:a,first);
+  const nl=FL.lots.length,picks=FL.harvest.length;
+  const capTxt=capShow.length<2?` One crush window takes ${caps.red.toFixed(0)} tons of reds and one press day ${caps.white.toFixed(0)} tons of whites${capShow.length?'':', both well above any day here'}.`:'';
+  $('harvLede').textContent=`${total.toFixed(1)} tons picked over ${last-first+1} days, ${fdate(first).split(',')[0]} to ${fdate(last).split(',')[0]}, in half-ton steps on each wine's curve. The busiest day is ${fdate(peak).split(',')[0]} with ${days[peak].reduce((p,q)=>p+q,0).toFixed(1)} tons. ${picks} variety picks fill ${nl} fermentor lots: a tank takes each day's fruit until it is full, or until the ${G.fillDays}-day fill window has passed and it is at least ${G.minFillPct}% full.`+capTxt;
+  $('harvLegend').innerHTML=V.map((v,i)=>`<span><i style="background:${VCOL[i%VCOL.length]}"></i>${v.name}</span>`).join('')+(capShow.length?`<span><i style="background:var(--ink);height:2px"></i>One day's capacity (dashed)</span>`:'');
+  harvNow();
+}
+function harvNow(){if(!FL||!$('harvNow'))return;const today=FL.harvest.filter(h=>h.day-AUG1===cur);
+  if(!today.length){$('harvNow').textContent=`${fdate(cur).split(',')[0]}: nothing picked.`;return}
+  const caps=harvCaps(),red=today.filter(h=>h.color==='red').reduce((a,h)=>a+h.tons,0),white=today.filter(h=>h.color==='white').reduce((a,h)=>a+h.tons,0),bins=today.reduce((a,h)=>a+Math.ceil(h.tons/0.5-1e-9),0);
+  $('harvNow').textContent=`${fdate(cur).split(',')[0]}: `+today.map(h=>`${h.tons.toFixed(1)} tons of ${h.name}`).join(', ')+`, ${bins} half-ton bins.`+(red?` Reds use ${Math.round(red/caps.red*100)}% of the crush window.`:'')+(white?` Whites use ${Math.round(white/caps.white*100)}% of a press day.`:'');
 }
 function drawWork(d0,d1){
   const own=G.facility==='build'&&M.lbr;$('workBlock').hidden=!own;if(!own)return;
@@ -297,7 +339,7 @@ function workNow(d){
 function flowLede(){
   if(G.facility!=='build'){$('flowLede').textContent='Custom crush: this is your wine moving through someone else\'s cellar, so there is nothing to size and no capacity lines. Barrel counts still set how many barrels you buy.';return}
   const S=M.sz,N=FL.need,mg=Math.round((G.designFactor-1)*100);
-  $('flowLede').textContent=`The equipment list is sized from this flow: the most vessels in use on any day of a normal year, plus the ${mg}% design margin. That gives ${S.nRed} red ferment tanks of ${n0(FL.size.redTank)} gallons, ${S.nW} white tanks of ${n0(FL.size.whiteTank)}, ${S.nS} lot tanks of ${n0(FL.size.storage)}, ${S.nB} blending tanks of ${n0(FL.size.blend)}, and ${n0(S.barrels)} barrels (peak ${n0(N.barrel.v)} in use plus spares). Each tank type is the smallest standard size that holds the largest lot. Lower the design margin under the assumptions to see where it breaks.`+(FL.exceptions.length?` Departures from the plan as set: `+FL.exceptions.map(e=>`${e.wine}${e.lot!=null&&e.lot!==undefined?' lot '+(e.lot+1):''}, ${e.process.toLowerCase()}: ${e.what}. ${e.remedies?'Options: '+e.remedies+'.':''}`).join(' '):'');
+  $('flowLede').textContent=`The equipment list is sized from this flow: the most vessels in use on any day of a normal year, plus the ${mg}% design margin. That gives ${S.nRed} red ferment tanks of ${n0(FL.size.redTank)} gallons, ${S.nW} white tanks of ${n0(FL.size.whiteTank)}, ${S.nS} lot tanks of ${n0(FL.size.storage)}, ${S.nB} blending tanks of ${n0(FL.size.blend)}, and ${n0(S.barrels)} barrels (peak ${n0(N.barrel.v)} in use plus spares). Fermentors are the size set under Harvest, and each lot is filled to fit one; lot and blending tanks are the smallest standard size that holds the largest lot. Lower the design margin under the assumptions to see where it breaks.`+(FL.exceptions.length?` Departures from the plan as set: `+FL.exceptions.map(e=>`${e.wine}${e.lot!=null&&e.lot!==undefined?' lot '+(e.lot+1):''}, ${e.process.toLowerCase()}: ${e.what}. ${e.remedies?'Options: '+e.remedies+'.':''}`).join(' '):'');
 }
 function renderFlow(){if(tab!=='flow')return;FL=M.FL;const S=M.sz;
   FL.vcaps=G.facility==='build'?{redTank:S.nRed,whiteTank:S.nW,storage:S.nS,blend:S.nB,barrel:S.barrels}:{};
@@ -342,7 +384,7 @@ const groups=[
  ['Equipment and barrels',[['jacketGal','Jacketed tank cost at 1,000 gal',4,20,0.5,v=>'$'+v+'/gal'],['storageGal','Storage tank cost at 1,000 gal',3,15,0.5,v=>'$'+v+'/gal'],['hoseFt','2" wine hose',5,60,1,v=>'$'+v+'/ft'],['designFactor','Design margin over peak vessels in use',0.7,1.5,0.05,v=>'+'+Math.round((v-1)*100)+'%'],['barrelNew','New barrel',600,2000,25,v=>'$'+v],['barrelUsed','Used barrel',100,800,25,v=>'$'+v],['lotsPerTank','Lots of one wine sharing a lot tank after press',1,4,1,v=>v===1?'kept separate':v+' lots'],['barrelSpare','Spare barrels over peak',1,1.2,0.01,v=>'+'+Math.round((v-1)*100)+'%']]],
  ['Production',[['otherSupplies','Other cellar supplies, not itemized',0,8,0.25,v=>'$'+v.toFixed(2)+'/case'],['customCase','Custom crush fee',20,120,1,v=>'$'+v+'/case'],['labelSet','Labels, front and back',0.05,1.5,0.01,v=>'$'+v.toFixed(2)+'/bottle'],['carton','Carton',1,6,0.1,v=>'$'+v.toFixed(2)],['bottling','Mobile bottling',1,8,0.25,v=>'$'+v.toFixed(2)+'/case']]],
  ['Cellar practice',[['yanHarvest','YAN at harvest',60,400,5,v=>v+' mg/L'],['yanTarget21','YAN target at 21 Brix',120,350,5,v=>v+' mg/L'],['yanPerBrix','More YAN per Brix above 21',0,50,1,v=>v+' mg/L'],['yeastRate','Yeast inoculation',10,50,1,v=>v+' g/hL'],['complexRate','Complex nutrient',0,60,1,v=>v+' g/hL'],['acidRed','Tartaric addition, reds',0,3,0.1,v=>v.toFixed(1)+' g/L'],['acidWhite','Tartaric addition, whites',0,3,0.1,v=>v.toFixed(1)+' g/L'],['bentWhite','Bentonite, whites',0,2,0.05,v=>v.toFixed(2)+' g/L'],['so2Crush','SO2 at crush',0,80,5,v=>v+' mg/L'],['so2PostAF','SO2 after ML, or after ferment without ML',0,100,5,v=>v+' mg/L'],['so2Rack','SO2 at each racking',0,40,5,v=>v+' mg/L'],['so2Barrel','SO2 top-up in barrel',0,30,1,v=>v+' mg/L'],['so2BarrelDays','Barrel SO2 top-up every',20,120,5,v=>v+' days'],['so2Bottle','SO2 before bottling',0,50,5,v=>v+' mg/L'],['dryIceLbTon','Dry ice in cold soak',0,100,5,v=>v+' lb/ton'],['filterPasses','Pad filtration passes',0,3,1,v=>v?v+' before bottling':'unfiltered']]],
- ['Harvest',[['harvestSpread','Pick spread, all varieties',0.2,2,0.1,v=>v===1?'as set per wine':Math.round(v*100)+'% of normal'],['lotTons','Largest single pick',2,60,1,v=>v+' tons'],['crushShifts','Crush shifts a day',1,2,1,v=>v===1?'one':'two'],['crushShiftHrs','Shift length',6,12,0.5,v=>v+' hr'],['crushSetupHrs','Crush setup and cleanup',0,4,0.5,v=>v+' hr a day'],['workDayHrs','Working day for the press',8,24,1,v=>v+' hr']]],
+ ['Harvest',[['redFermGal','Red fermentor size',500,8000,500,v=>n0(v)+' gal'],['whiteFermGal','White fermentor size',500,8000,500,v=>n0(v)+' gal'],['fillDays','Fill window for a fermentor',1,5,1,v=>v+(v===1?' day':' days')],['minFillPct','Minimum fermentor fill',0,90,5,v=>v+'%'],['harvestSpread','Pick spread, all varieties',0.2,2,0.1,v=>v===1?'as set per wine':Math.round(v*100)+'% of normal'],['lotTons','Largest lot',2,60,1,v=>v+' tons'],['crushShifts','Crush shifts a day',1,2,1,v=>v===1?'one':'two'],['crushShiftHrs','Shift length',6,12,0.5,v=>v+' hr'],['crushSetupHrs','Crush setup and cleanup',0,4,0.5,v=>v+' hr a day'],['workDayHrs','Working day for the press',8,24,1,v=>v+' hr']]],
  ['People',[['ownerSalary','Owner salary as winemaker',0,250000,5000,money],['wmSalary','Hired winemaker salary',60000,250000,5000,money],['burden','Payroll burden',10,40,1,v=>v+'%'],['trStaff','Tasting room staff',0,500000,10000,v=>money(v)+'/yr'],['adminCost','Admin, compliance, accounting',0,250000,5000,v=>money(v)+'/yr']]],
  ['Labor',[['cellarWage','Cellar worker wage',17.13,40,0.25,v=>'$'+v.toFixed(2)+'/hr'],['seasonalWage','Harvest worker wage',17.13,35,0.25,v=>'$'+v.toFixed(2)+'/hr'],['seasonalBurden','Seasonal payroll burden',5,30,1,v=>v+'%'],['bottlePerDay','Mobile bottling line',400,3000,100,v=>n0(v)+' cases/day'],['crushCrew','Crew on a crush day',2,10,1,v=>v+' people'],['capHrs','Per pumpover or punchdown',0.1,1,0.05,v=>v.toFixed(2)+' hr'],['generalHrs','General cellar work off-season',0,60,1,v=>v+' hr/week'],['wmHarvestHrs','Winemaker hands-on, harvest',0,70,1,v=>v+' hr/week'],['wmCellarHrs','Winemaker hands-on, rest of year',0,40,1,v=>v+' hr/week'],['permHarvestHrs','Full-time crew hours in harvest',40,70,1,v=>v+' hr/week']]],
  ['Overhead',[['utilBase','Utilities base',0,80000,1000,money],['insurePct','Insurance',0,2,0.1,v=>v+'% of capital'],['maintPct','Maintenance',0,4,0.1,v=>v+'% of build and equipment'],['marketingPct','Marketing',0,15,0.5,v=>v+'% of revenue'],['dtcFeePct','Card and DTC fees',0,6,0.5,v=>v+'%'],['trLease','Tasting room lease (custom crush)',0,200000,5000,v=>money(v)+'/yr']]],
@@ -494,7 +536,7 @@ function setTab(){
 let curRAF=0;
 function moveCursor(){if(curRAF)return;curRAF=requestAnimationFrame(()=>{curRAF=0;const[d0,d1]=rangeOf(),f=(cur-d0)/(d1-d0);
   document.querySelectorAll('#flowView line.cur').forEach(l=>{const x=+l.dataset.x0+f*(+l.dataset.x1-l.dataset.x0);l.setAttribute('x1',x);l.setAttribute('x2',x)});
-  $('scrub').value=cur;snap();if(locked)lockNote()})}
+  $('scrub').value=cur;snap();harvNow();if(locked)lockNote()})}
 $('scrub').addEventListener('input',e=>{cur=+e.target.value;moveCursor()});
 $('snap').addEventListener('click',e=>{const r=e.target.closest('[data-loc]');if(!r)return;selLoc=selLoc===r.dataset.loc?null:r.dataset.loc;snap()});
 $('snap').addEventListener('keydown',e=>{const r=e.target.closest('[data-loc]');if(r&&(e.key==='Enter'||e.key===' ')){e.preventDefault();selLoc=selLoc===r.dataset.loc?null:r.dataset.loc;snap();$('snap').querySelector(`[data-loc="${r.dataset.loc}"]`).focus()}});
@@ -509,10 +551,10 @@ document.addEventListener('keydown',e=>{
 
 // hovering a chart follows the mouse; clicking a chart locks the date there (click again or Esc to follow the mouse again)
 let locked=false;
-function dayAt(id,e){const r=$(id).getBoundingClientRect(),[d0,d1]=rangeOf(),l={sF:8,sG:150,sL:40,sE:8}[id],rr=12;const f=(e.clientX-r.left-l)/(r.width-l-rr);return f<0||f>1?null:Math.round(d0+f*(d1-d0))}
+function dayAt(id,e){const r=$(id).getBoundingClientRect(),[d0,d1]=rangeOf(),l={sF:8,sG:150,sL:40,sE:8,sH:8}[id],rr=12;const f=(e.clientX-r.left-l)/(r.width-l-rr);return f<0||f>1?null:Math.round(d0+f*(d1-d0))}
 function setLock(on){locked=on;$('flowView').classList.toggle('locked',on);lockNote()}
 function lockNote(){$('lockNote').innerHTML=locked?`<b>Date locked on ${fdate(cur).split(',')[0]}.</b> Click a chart or press <kbd>esc</kbd> to follow the mouse again.`:'Following the mouse. Click a chart to lock the date.'}
-['sF','sG','sL','sE'].forEach(id=>{
+['sF','sG','sL','sE','sH'].forEach(id=>{
   $(id).addEventListener('pointermove',e=>{if(!FL||locked)return;const d=dayAt(id,e);if(d==null)return;cur=d;moveCursor()});
   $(id).addEventListener('click',e=>{if(!FL)return;const d=dayAt(id,e);if(locked){setLock(false);if(d!=null){cur=d;moveCursor()}}else{if(d!=null){cur=d;moveCursor()}setLock(true)}});
 });

@@ -48,7 +48,7 @@ function chemicals(FL,V,G){
   const short=[];
   FL.lots.forEach(L=>{
     const v=V[L.wi],wi=L.wi,red=L.color==='red',S=L.segs;
-    const press=S.find(s=>s.loc==='press'), must=red?L.mustGal:press.gal, hL=must*L_GAL/100;
+    const must=red?L.mustGal:S.filter(s=>s.loc==='press').reduce((a,s)=>a+s.gal,0), hL=must*L_GAL/100;
     addQ('yeast',hL*G.yeastRate/1000,wi);
     const n=nutrientPlan(v,G);addQ('complex',hL*n.complexGhL/1000,wi);addQ('dap',must*L_GAL*n.dapGL/1000,wi);if(n.short>0.5)short.push({wine:v.name,lot:L.j,short:n.short});
     addQ('tartaric',must*L_GAL*(red?G.acidRed:G.acidWhite)/1000,wi);
@@ -67,7 +67,7 @@ function chemicals(FL,V,G){
     S.filter(s=>s.loc==='barrel').forEach(s=>so2(G.so2Barrel,s.gal*Math.floor((s.b-s.a)/G.so2BarrelDays),wi));
     const blend=S.find(s=>s.loc==='blend');
     if(blend){so2(G.so2Bottle,blend.gal,wi);if(!red)addQ('bentonite',blend.gal*L_GAL*G.bentWhite/1000,wi);addQ('pads',Math.ceil(blend.gal/G.galPerPad)*G.filterPasses,wi);clean(blend.gal,wi)}
-    clean(400,wi);clean(400,wi); // crush line and press cleanup on the pick day
+    L.picks.forEach(()=>{clean(400,wi);clean(400,wi)}); // crush line and press cleanup on each pick day
   });
   // everything not itemized above (enzymes, tannins, other fining agents, sanitizer, gaskets), as an explicit allowance
   V.forEach((v,wi)=>{q.other=(q.other||0)+v.cases;per[wi]+=v.cases*G.otherSupplies});

@@ -15,8 +15,8 @@ test('1. sorting choice reaches the lot simulation and the crush line', () => {
     const m = run({ sort });
     assert.strictEqual(m.FL.winery.sort, sort);
     for (const l of m.FL.lots) {
-      const setup = l.color === 'red' ? 1.5 : 0.5;
-      assert.ok(Math.abs(l.crushHrs - (l.tons / rate + setup)) < 1e-9, `${sort} ${l.name}`);
+      const setup = l.color === 'red' ? 1.5 : 0.5, want = l.picks.reduce((a, k) => a + k.tons / rate + setup, 0);
+      assert.ok(Math.abs(l.crushHrs - want) < 1e-9, `${sort} ${l.name}`);
     }
   }
 });
@@ -26,7 +26,8 @@ test('2. press loads and press hours use the winery press', () => {
     const m = run({}, scale(VDEF, f)), t = m.FL.winery.press.tons;
     assert.strictEqual(m.sz.items.find(i => i.k === 'Membrane press').unit, t + ' ton');
     for (const l of m.FL.lots) {
-      assert.strictEqual(l.loads, Math.ceil(l.tons / t - 1e-9), `${f}x ${l.name} loads`);
+      const loads = l.color === 'red' ? Math.ceil(l.tons / t - 1e-9) : l.picks.reduce((a, k) => a + Math.ceil(k.tons / t - 1e-9), 0);
+      assert.strictEqual(l.loads, loads, `${f}x ${l.name} loads`);
       assert.ok(Math.abs(l.pressHrs - l.loads * PRESS_CYCLE_HRS[l.color]) < 1e-9, `${f}x ${l.name} hours`);
     }
   }
@@ -34,8 +35,8 @@ test('2. press loads and press hours use the winery press', () => {
 
 test('3. red lot cooling comes from the jacket on its tank', () => {
   const m = run(), W = m.FL.winery;
-  assert.strictEqual(W.redTankGal, m.FL.size.redTank);
-  assert.ok(Math.abs(W.coolBTU - jacketBTU(m.FL.size.redTank, m.G)) < 1e-9 && W.coolBTU > 0);
+  assert.strictEqual(W.redTankGal, m.G.redFermGal, 'jackets are those of the fermentor size chosen');
+  assert.ok(Math.abs(W.coolBTU - jacketBTU(W.redTankGal, m.G)) < 1e-9 && W.coolBTU > 0);
   const lo = run({ jacketFlux: 10 }).FL.winery.coolBTU;
   assert.ok(lo < W.coolBTU / 100, 'capacity follows the jacket heat flux');
   assert.strictEqual(lotParams(VDEF[3], 5, 280, W).coolBTU, W.coolBTU);

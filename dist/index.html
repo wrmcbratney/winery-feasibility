@@ -94,8 +94,13 @@ kbd{font:12px/1 ui-monospace,monospace;border:1px solid var(--rule);border-botto
       <div class="seg" style="max-width:260px;flex:0 1 240px"><button data-unit="gal">Gallons</button><button data-unit="ves">Vessels</button></div>
     </div>
     <p class="lede" id="flowLede" style="margin-top:6px"></p>
+    <h3 style="margin-top:14px">Harvest by day</h3>
+    <p class="dlab" id="harvLede" style="margin:2px 0 4px"></p>
+    <div class="now" id="harvNow" aria-live="polite"></div>
     <div class="flowgrid">
       <div>
+        <div class="fig" style="min-height:220px"><svg id="sH" role="img" aria-label="Tons picked per day by variety, cumulative tons, and one day of crush and press capacity"></svg></div>
+        <div class="legend" id="harvLegend" style="margin-bottom:10px"></div>
         <div class="fig lanes"><svg id="sF" role="img" aria-label="Gallons by cellar location over time, with capacity lines"></svg></div>
         <input type="range" id="scrub" min="0" max="364" step="1" aria-label="Date">
         <div class="legend"><span><i style="background:var(--ink);height:2px"></i>Installed capacity (dashed)</span><span><i style="background:var(--bad)"></i>Over capacity</span><span id="flowNote"></span><span><kbd>&larr;</kbd> <kbd>&rarr;</kbd> a day, with <kbd>shift</kbd> a week</span><span id="lockNote" aria-live="polite"></span></div>
@@ -353,7 +358,7 @@ function chemicals(FL,V,G){
   const short=[];
   FL.lots.forEach(L=>{
     const v=V[L.wi],wi=L.wi,red=L.color==='red',S=L.segs;
-    const press=S.find(s=>s.loc==='press'), must=red?L.mustGal:press.gal, hL=must*L_GAL/100;
+    const must=red?L.mustGal:S.filter(s=>s.loc==='press').reduce((a,s)=>a+s.gal,0), hL=must*L_GAL/100;
     addQ('yeast',hL*G.yeastRate/1000,wi);
     const n=nutrientPlan(v,G);addQ('complex',hL*n.complexGhL/1000,wi);addQ('dap',must*L_GAL*n.dapGL/1000,wi);if(n.short>0.5)short.push({wine:v.name,lot:L.j,short:n.short});
     addQ('tartaric',must*L_GAL*(red?G.acidRed:G.acidWhite)/1000,wi);
@@ -372,7 +377,7 @@ function chemicals(FL,V,G){
     S.filter(s=>s.loc==='barrel').forEach(s=>so2(G.so2Barrel,s.gal*Math.floor((s.b-s.a)/G.so2BarrelDays),wi));
     const blend=S.find(s=>s.loc==='blend');
     if(blend){so2(G.so2Bottle,blend.gal,wi);if(!red)addQ('bentonite',blend.gal*L_GAL*G.bentWhite/1000,wi);addQ('pads',Math.ceil(blend.gal/G.galPerPad)*G.filterPasses,wi);clean(blend.gal,wi)}
-    clean(400,wi);clean(400,wi); // crush line and press cleanup on the pick day
+    L.picks.forEach(()=>{clean(400,wi);clean(400,wi)}); // crush line and press cleanup on each pick day
   });
   // everything not itemized above (enzymes, tannins, other fining agents, sanitizer, gaskets), as an explicit allowance
   V.forEach((v,wi)=>{q.other=(q.other||0)+v.cases;per[wi]+=v.cases*G.otherSupplies});
@@ -398,31 +403,20 @@ const _S=typeof nutrientPlan==='function'?{nutrientPlan}:require('./supplies.js'
 function sortRate(sort){return (typeof SORT_RATE!=='undefined'?SORT_RATE:require('./core.js').SORT_RATE)[sort]??1e9}
 // Hours the crush line runs in a day: crush shifts less setup and cleanup (VEN 235: one 8-hour shift less 2 hours).
 function crushHoursPerDay(G){return Math.max(1,G.crushShifts*G.crushShiftHrs-G.crushSetupHrs)}
-// The most fruit one day can take for a given color. Reds are limited by the crush line and sorting inside the crush
-// window; whites go whole cluster to the press, which can cycle through the working day, and through sorting if any.
-function pickCapTons(color,W,G){
-  const hrs=crushHoursPerDay(G), sr=sortRate(W.sort);
-  if(color==='red')return hrs*Math.min(CRUSH_RATE,sr);
-  const press=Math.floor(G.workDayHrs/PRESS_CYCLE_HRS.white)*W.press.tons;
-  return W.sort&&W.sort!=='none'?Math.min(press,hrs*sr):press;
-}
-// Inverse standard normal (Acklam), for placing picks on a variety's arrival curve.
-function normInv(p){
-  const a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.357751867269,-30.66479806614716,2.506628277459239],
-   b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155211027],
-   c=[-0.007784894002430293,-0.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783],
-   d=[0.007784695709041462,0.3224671290700398,2.445134137142996,3.754408661907416],q=Math.min(p,1-p);
-  let x;
-  if(q<0.02425){const r=Math.sqrt(-2*Math.log(q));x=(((((c[0]*r+c[1])*r+c[2])*r+c[3])*r+c[4])*r+c[5])/((((d[0]*r+d[1])*r+d[2])*r+d[3])*r+1)}
-  else{const r=p-0.5,s=r*r;x=(((((a[0]*s+a[1])*s+a[2])*s+a[3])*s+a[4])*s+a[5])*r/(((((b[0]*s+b[1])*s+b[2])*s+b[3])*s+b[4])*s+1);return x}
-  return p<0.5?x:-x;
-}
-// Pick days for a variety: its tonnage arrives on a normal curve (mean pick day, spread in days, VEN 235), cut into n
-// equal slices; each pick sits at the middle of its slice. Deterministic, so a stress harvest is a change of mean or spread.
-function pickDays(v,n,G){
-  const sd=(v.pickSD??2)*(G.harvestSpread??1),out=[];
-  for(let k=0;k<n;k++){let d=Math.round((v.pick??270)+(n>1?sd*normInv((k+0.5)/n):0));if(k&&d<=out[k-1])d=out[k-1]+1;out.push(d)}
-  return out;
+// Standard normal CDF (Abramowitz and Stegun 7.1.26, error under 1.5e-7).
+function normCdf(x){const z=Math.abs(x)/Math.SQRT2,t=1/(1+0.3275911*z),y=1-((((1.061405429*t-1.453152027)*t+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-z*z);return x>=0?(1+y)/2:(1-y)/2}
+// Daily harvest for a variety (VEN 235): its tons arrive on a normal curve around the mean pick day. Each day gets the
+// area under the curve for that day, in half-ton steps (the picking bin), with leftover halves going to the days that
+// lost most to rounding so the season total holds. Deterministic: a stress harvest is a change of mean or spread.
+function dailyArrival(v,tons,G){
+  const mu=v.pick??270,sd=(v.pickSD??2)*(G.harvestSpread??1),U=Math.max(1,Math.round(tons/0.5));
+  if(!(sd>0))return [{day:Math.round(mu),tons:U*0.5}];
+  const d0=Math.floor(mu-4*sd),d1=Math.ceil(mu+4*sd),raw=[];
+  for(let d=d0;d<=d1;d++)raw.push({day:d,u:U*(normCdf((d+0.5-mu)/sd)-normCdf((d-0.5-mu)/sd))});
+  const tot=raw.reduce((a,r)=>a+r.u,0);raw.forEach(r=>{r.u*=U/tot;r.n=Math.floor(r.u);r.rem=r.u-r.n});
+  let left=U-raw.reduce((a,r)=>a+r.n,0);
+  [...raw].sort((x,y)=>y.rem-x.rem||Math.abs(x.day-mu)-Math.abs(y.day-mu)).forEach(r=>{if(left>0){r.n++;left--}});
+  return raw.filter(r=>r.n>0).map(r=>({day:r.day,tons:r.n*0.5}));
 }
 function pressFor(allTons){return PRESSES.find(p=>allTons<=p.upTo)}
 function crushHours(tons,color,sort){return tons/Math.min(CRUSH_RATE,sortRate(sort))+CRUSH_SETUP_HRS[color]}
@@ -492,7 +486,7 @@ const GDEF={
  customCase:45, capHrs:0.33, crushCrew:4, bottlePerDay:1200, shiftHrs:10, generalHrs:20, harvestWeeks:8, wmHarvestHrs:45, wmCellarHrs:15, permHarvestHrs:55, cellarWage:24, seasonalWage:20, seasonalBurden:15, tankLeaseCustom:0,
  labelSet:0.30, carton:2.5, bottling:3.5,
  wmSalary:120000, burden:25, ownerSalary:100000, adminCost:60000, trStaff:190000, trLease:60000,
- propTaxPct:1, offsiteCaseMonth:0.35, offsiteInOut:1, offsiteAdmin:3000, testsPerLot:15, testExt:40, lotTons:30, workDayHrs:16, crushShifts:1, crushShiftHrs:8, crushSetupHrs:2, harvestSpread:1, labWage:30,
+ propTaxPct:1, offsiteCaseMonth:0.35, offsiteInOut:1, offsiteAdmin:3000, testsPerLot:15, testExt:40, lotTons:30, redFermGal:3000, whiteFermGal:3000, fillDays:2, minFillPct:50, workDayHrs:16, crushShifts:1, crushShiftHrs:8, crushSetupHrs:2, harvestSpread:1, labWage:30,
  utilBase:20000, utilCase:1.5, insurePct:0.5, maintPct:1.5, marketingPct:6, dtcFeePct:3,
  shareTR:[42,28,30], shareNoTR:[10,15,75], clubDisc:15, wholesaleFactor:50,
  ramp:[35,55,75,90,100],
@@ -895,8 +889,8 @@ const SOURCES=[
  ['DAP limit','0.96 g/L','Ammonium phosphate as a yeast nutrient must not exceed 8 lb per 1,000 gallons (0.96 g/L) of wine, 27 CFR 24.246. The model caps DAP there and reports any nitrogen still short.','High','https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-24/subpart-L/section-24.246'],
  ['Cellar practice rates','YAN 180 at harvest, target 200 at 21 Brix plus 25 per Brix; yeast 25 g/hL; SO2 30 at crush, 50 after ML, 15 per racking, 10 every 60 days in barrel, 20 before bottling (mg/L); tartaric 1.0 reds, 0.5 whites (g/L); bentonite 0.5 g/L whites; dry ice 15 lb/ton','Placeholders for the owner\'s own practice, not sourced. Complex nutrient assumed to give about 25 mg/L YAN at 25 g/hL. Cleaning assumes recirculated solution of 1.5% of tank volume (at least 15 gal) at 14 g/gal percarbonate and 4 g/gal citric.','Low',''],
  ['Other cellar supplies','$1.00/case','Enzymes, tannins, other fining agents, sanitizer, gaskets and the like, not itemized. Estimate.','Low',''],
- ['Harvest arrival','Each variety on a normal curve: mean pick day and spread in days (Chardonnay 1.5, Sauvignon Blanc, Pinot Noir and Cabernet 2.5, others 2)','Method from the owner\'s VEN 235 Winery Design coursework (UC Davis): tons arrive on a normal curve per variety. Here the curve is cut into equal slices, one pick at the middle of each. Spreads are the coursework values; the others are estimates.','Low',''],
- ['Lot size','One lot per pick; a variety takes as few picks as the largest lot (30 tons) and one day of crush or press allow','A small block is picked in one go. Reds are limited by the crush line and sorting inside the crush window; whites by press cycles in a working day. Estimate.','Low',''],
+ ['Harvest arrival','Each variety on a normal curve: mean pick day and spread in days (Chardonnay 1.5, Sauvignon Blanc, Pinot Noir and Cabernet 2.5, others 2); tons per day are the area under the curve for each day, in half-ton steps','Method from the owner\'s VEN 235 Winery Design coursework (UC Davis), which spread each variety\'s tons over days on a normal curve. Half-ton steps are one picking bin; leftover halves go to the days that lost most to rounding, so the season total holds. Spreads are the coursework values; the others are estimates.','Low',''],
+ ['Fermentor fills','3,000-gallon fermentors; a tank takes each day\'s fruit until full, or until a 2-day fill window has passed and it is at least 50% full; a small last fill joins the tank before it','A lot is one filled fermentor. Its ferment starts when the fill completes; the tank is held from the first pick. Fill window and minimum fill are placeholders for the owner\'s practice.','Low',''],
  ['Crush window','One 8-hour crush shift less 2 hours of setup and cleanup: 6 hours a day; the press can run a 16-hour day','VEN 235 coursework work-day assumptions: a 16-hour day of two 8-hour shifts, one for crush. Days over the window are reported as overtime.','Low',''],
  ['Fermentor floor','Fermenting volume divided by tank size, as if lots split freely across tanks','VEN 235 coursework method for fermentors needed. Whole lots in whole tanks must come in at or above it; shown beside the red tank count.','Medium',''],
 ];
@@ -909,7 +903,7 @@ const UNIT={pad:['bin','bins'],press:['press load','press loads'],redTank:['tank
 const AUG1=213, MIDOCT=288-213, MO=30.44, GAL_CASE=2.378, BBL=59.4, STD_TANK=[500,750,1000,1500,2000,2500,3000,4000,5000,6000,8000];
 const flowCache={};
 const _X=typeof exception==='function'?{exception}:require('./exceptions.js');
-const _W=typeof lotParams==='function'?{wineryFor,lotParams,crushHours,jacketBTU,PRESS_CYCLE_HRS,SORT_LABOR,CRUSH_RATE,crushHoursPerDay,pickCapTons,pickDays,sortRate}:require('./winery.js');
+const _W=typeof lotParams==='function'?{wineryFor,lotParams,crushHours,jacketBTU,PRESS_CYCLE_HRS,SORT_LABOR,CRUSH_RATE,crushHoursPerDay,dailyArrival,sortRate}:require('./winery.js');
 function lotSim(v,tons,pick,W,simulate){
   const p=_W.lotParams(v,tons,pick,W),k=JSON.stringify(p);
   if(!flowCache[k])flowCache[k]=simulate(p);
@@ -918,24 +912,34 @@ function lotSim(v,tons,pick,W,simulate){
 const stdTank=gal=>STD_TANK.find(s=>s>=gal)||STD_TANK[STD_TANK.length-1];
 function lotPlan(V,G,simulate){
   const lots=[], short={}, exc=[], seen=new Set(), flag=(key,cls,o)=>{if(!seen.has(key)){seen.add(key);exc.push(_X.exception(cls,o))}};
-  // red ferment tank size first (it depends only on lot volume), so each lot's jacket cooling comes from the tank it sits in
-  // A lot is one pick. A variety is picked in as few picks as the winemaker's largest lot and one day's crush or press
-  // capacity allow, so a small block comes in all at once.
-  const W0=_W.wineryFor(V,G,0);
-  const split=v=>{const tons=v.cases/v.cpt,cap=Math.min(G.lotTons,_W.pickCapTons(v.color,W0,G)),n=Math.max(1,Math.ceil(tons/cap-1e-9));return {tons,n,lt:tons/n,cap}};
-  const redGal=Math.max(0,...V.filter(v=>v.color==='red').map(v=>{const {lt}=split(v),q=_W.lotParams(v,lt,0,W0);return lt*q.mustGal*(1+q.headspace/100)}));
-  const W=_W.wineryFor(V,G,redGal?stdTank(redGal):0), pressT=W.press.tons;
+  // Fermentors are a design choice (VEN 235 set one size and counted how many). Each day's pick goes into the fermentor
+  // being filled for that variety until it is full or the fill window closes; a pick that overflows is split. A lot is
+  // one filled fermentor: its ferment starts when the fill completes, and the tank is occupied from the first pick.
+  const W=_W.wineryFor(V,G,stdTank(G.redFermGal)), pressT=W.press.tons, harvest=[];
   V.forEach((v,wi)=>{
-    const {n,lt}=split(v), cases=v.cases/n, days=_W.pickDays(v,n,G);
-    const bm=Math.min(v.bottle??(v.barrel>0?Math.round((v.color==='red'?6:0.5)+v.barrel+1):5),v.release),bottle=MIDOCT+bm*MO, release=MIDOCT+v.release*MO;
-    for(let j=0;j<n;j++){
-      const pick=days[j], p=pick-AUG1, S=[];
+    const red=v.color==='red', q=_W.lotParams(v,1,v.pick??270,W);
+    const perTon=red?q.mustGal*(1+q.headspace/100):170*1.1, tankGal=stdTank(red?G.redFermGal:G.whiteFermGal);
+    const capT=Math.min(G.lotTons,tankGal/perTon), minT=capT*G.minFillPct/100, days=_W.dailyArrival(v,v.cases/v.cpt,G), total=days.reduce((a,d)=>a+d.tons,0);
+    days.forEach(d=>harvest.push({wi,name:v.name,color:v.color,day:d.day,tons:d.tons}));
+    const fills=[];let cur=null;
+    for(const d of days){let rem=d.tons;
+      while(rem>1e-9){
+        // a fermentor closes when full, or when the fill window has passed and it holds at least the minimum fill;
+        // a thin shoulder of the harvest keeps filling the open tank rather than taking one of its own
+        if(!cur||cur.tons>=capT-1e-9||(d.day-cur.first>=G.fillDays&&cur.tons>=minT-1e-9)){cur={first:d.day,picks:[],tons:0};fills.push(cur)}
+        const take=Math.min(rem,capT-cur.tons);cur.picks.push({day:d.day,tons:take});cur.tons+=take;rem-=take}}
+    // a small last fill joins the tank before it when it fits
+    if(fills.length>1){const last=fills[fills.length-1],prev=fills[fills.length-2];if(last.tons<minT-1e-9&&prev.tons+last.tons<=capT+1e-9){prev.picks.push(...last.picks);prev.tons+=last.tons;fills.pop()}}
+    const n=fills.length;
+    const bm=Math.min(v.bottle??(v.barrel>0?Math.round((red?6:0.5)+v.barrel+1):5),v.release),bottle=MIDOCT+bm*MO, release=MIDOCT+v.release*MO;
+    fills.forEach((F,j)=>{
+      const lt=F.tons, cases=v.cases*lt/total, pick=F.first, p=pick-AUG1, fd=F.picks[F.picks.length-1].day-F.first, S=[];
       const seg=(loc,a,b,gal,units,x)=>{if(b>a)S.push({loc,a:p+a,b:p+b,gal,units,...x})};
       const ev=(loc,a,gal,units)=>S.push({loc,a:p+a,b:p+a+1,gal,units,ev:true});
-      const bot=bottle-p, bl=bot-21, wineGal=v.cases*GAL_CASE*1.03, bins=Math.ceil(lt/0.5-1e-9), loads=Math.ceil(lt/pressT-1e-9);
+      const bot=bottle-p, bl=bot-21, wineGal=v.cases*GAL_CASE*1.03, bins=F.picks.reduce((a,k)=>a+Math.ceil(k.tons/0.5-1e-9),0);
       // barrel time as set, unless bottling cuts it short; a gap under 60 days before blending is absorbed into barrel
       // time rather than a short tank stay. Either way it is a change to how the wine is made, so it is reported.
-      const barrelOut=(inDay,wantGal)=>{
+      const barrelOut=inDay=>{
         let out=Math.min(inDay+v.barrel*MO,bl);
         if(inDay+v.barrel*MO>bl+7){short[wi]=(bl-inDay)/MO;
           flag('short'+wi,'method',{constraint:'Bottling date',wine:v.name,process:'Barrel aging',what:`bottles before its barrel time is up: about ${Math.round((bl-inDay)/MO)} of ${v.barrel} months in barrel`,consequences:'less oak and less time on lees than intended',remedies:'move bottling later in the wine table, or accept the shorter barrel time'})}
@@ -944,51 +948,53 @@ function lotPlan(V,G,simulate){
           out=bl}
         return out;
       };
-      let crushHrs,pressHrs;
-      if(v.color==='red'){
-        const q=_W.lotParams(v,lt,pick,W), nT=Math.ceil(lt*q.mustGal*(1+q.headspace/100)/W.redTankGal-1e-9), r=lotSim(v,lt,pick,{...W,coolBTU:nT*W.coolBTU},simulate);
+      F.picks.forEach(k=>ev('pad',k.day-F.first,k.tons*180,Math.ceil(k.tons/0.5-1e-9)));
+      let crushHrs=F.picks.reduce((a,k)=>a+_W.crushHours(k.tons,v.color,W.sort),0),pressHrs,loads;
+      if(red){
+        const q=_W.lotParams(v,lt,pick+fd,W), nT=Math.ceil(lt*q.mustGal*(1+q.headspace/100)/W.redTankGal-1e-9), r=lotSim(v,lt,pick+fd,{...W,coolBTU:nT*W.coolBTU},simulate);
         if(r.stuck)flag('stuck'+wi+'|'+j,'method',{constraint:'Fermentation kinetics',wine:v.name,lot:j,process:'Primary fermentation',what:`did not finish: ${Math.round(r.S)} g/L sugar left after ${Math.round(r.pressDay)} days`,consequences:'the lot holds its fermenter to the end of the simulated window and is pressed with sugar left, so that tank turns over late and the wine is exposed until it is restarted',remedies:'pick at lower Brix, add nutrients, warm the tank, or restart with an acclimated yeast'});
         if(r.mlStuck)flag('ml'+wi+'|'+j,'method',{constraint:'Malolactic kinetics',wine:v.name,lot:j,process:'Malolactic fermentation',what:'did not finish within 300 days of pressing',consequences:'malic acid left in the wine going to barrel',remedies:'reinoculate, warm the wine, or check SO2 and pH'});
         if(r.barrelForced)flag('bf'+wi+'|'+j,'reschedule',{constraint:'Cellar temperature',wine:v.name,lot:j,process:'Barrel down',what:'the cellar never reached the barrel-down temperature, so the lot went to barrel 300 days after pressing',consequences:'the lot tank is held all winter and spring',remedies:'heat the cellar or move to barrel on a date instead of a temperature'});
-        const barrelDay=Math.min(r.barrelDay,bot-30), bg=r.barrelGal;
-        ev('pad',0,r.mustGal,bins);seg('redTank',0,r.pressEnd,r.tankGal);ev('press',Math.floor(r.pressDay),r.gal,loads);
-        if(v.barrel>0){seg('storage',r.pressEnd,barrelDay,r.gal);const out=barrelOut(barrelDay);seg('barrel',barrelDay,out,bg,Math.ceil(bg/BBL-1e-9));seg('storage',out,bl,bg)}
-        else seg('storage',r.pressEnd,bl,r.gal);
+        const barrelDay=Math.min(fd+r.barrelDay,bot-30), bg=r.barrelGal;loads=Math.ceil(lt/pressT-1e-9);
+        seg('redTank',0,fd+r.pressEnd,r.tankGal);ev('press',fd+Math.floor(r.pressDay),r.gal,loads);
+        if(v.barrel>0){seg('storage',fd+r.pressEnd,barrelDay,r.gal);const out=barrelOut(barrelDay);seg('barrel',barrelDay,out,bg,Math.ceil(bg/BBL-1e-9));seg('storage',out,bl,bg)}
+        else seg('storage',fd+r.pressEnd,bl,r.gal);
         seg('blend',bl,bot,bg,null,{wine:wineGal,n});
-        crushHrs=_W.crushHours(lt,'red',W.sort);pressHrs=r.pressHrs;
+        pressHrs=r.pressHrs;
       }else{
-        const juice=lt*170;
-        ev('pad',0,lt*180,bins);ev('press',0,juice,loads);seg('whiteTank',0,2,juice*1.1);
-        if(v.barrel>0){const out=barrelOut(2);seg('barrel',2,out,juice*0.96,Math.ceil(juice*0.96/BBL-1e-9));seg('storage',out,bl,juice*0.94)}
-        else{seg('whiteTank',2,21,juice*1.1);seg('storage',21,bl,juice*0.96)}
+        // whole clusters go straight to the press on each pick day; the juice settles two days after the tank is full
+        const juice=lt*170;loads=0;
+        F.picks.forEach(k=>{const ld=Math.ceil(k.tons/pressT-1e-9);loads+=ld;ev('press',k.day-F.first,k.tons*170,ld)});
+        seg('whiteTank',0,fd+2,juice*1.1);
+        if(v.barrel>0){const out=barrelOut(fd+2);seg('barrel',fd+2,out,juice*0.96,Math.ceil(juice*0.96/BBL-1e-9));seg('storage',out,bl,juice*0.94)}
+        else{seg('whiteTank',fd+2,fd+21,juice*1.1);seg('storage',fd+21,bl,juice*0.96)}
         seg('blend',bl,bot,juice*0.94,null,{wine:wineGal,n});
-        crushHrs=_W.crushHours(lt,'white',W.sort);pressHrs=loads*_W.PRESS_CYCLE_HRS.white;
+        pressHrs=loads*_W.PRESS_CYCLE_HRS.white;
       }
       const bg=cases*GAL_CASE, rel=release-p;
       seg('bottled',bot,rel,bg,cases/56);
-      for(let q=0;q<12;q++){const f=1-(q+0.5)/12;seg('bottled',rel+q*MO,rel+(q+1)*MO,bg*f,cases*f/56)}
-      lots.push({wi,name:v.name,j,n,tons:lt,cases,wineCases:v.cases,pick,p,color:v.color,segs:S,bottle,release,bins,loads,crushHrs,pressHrs,mustGal:lt*180});
-    }
+      for(let k=0;k<12;k++){const f=1-(k+0.5)/12;seg('bottled',rel+k*MO,rel+(k+1)*MO,bg*f,cases*f/56)}
+      lots.push({wi,name:v.name,j,n,tons:lt,cases,wineCases:v.cases,pick,p,fillDays:fd,picks:F.picks,color:v.color,segs:S,bottle,release,bins,loads,crushHrs,pressHrs,mustGal:lt*180});
+    });
   });
-  // One day's crush line and press against what was picked that day; more than fits is overtime or a second shift.
-  const hrs=_W.crushHoursPerDay(G),byDay={};
-  lots.forEach(L=>{(byDay[L.pick]=byDay[L.pick]||[]).push(L)});
-  for(const d in byDay){const Ls=byDay[d],reds=Ls.filter(L=>L.color==='red'),whites=Ls.filter(L=>L.color==='white');
-    const line=reds.reduce((a,L)=>a+L.tons/Math.min(_W.CRUSH_RATE,_W.sortRate(W.sort)),0), press=whites.reduce((a,L)=>a+L.loads*_W.PRESS_CYCLE_HRS.white,0);
-    const names=[...new Set(Ls.map(L=>L.name))].join(' and ');
-    if(line>hrs+1e-9)exc.push(_X.exception('overtime',{constraint:'Crush line hours',wine:names,process:'Crush',what:`pick day ${dayLabel(+d)}: ${reds.reduce((a,L)=>a+L.tons,0).toFixed(1)} tons of reds need ${line.toFixed(1)} line hours against ${hrs} in the crush window`,consequences:'fruit waits on the pad or the crew works a longer day',remedies:'add a crush shift, pick one block a day later, or sort faster'}));
-    if(press>G.workDayHrs+1e-9)exc.push(_X.exception('overtime',{constraint:'White press hours',wine:names,process:'Pressing',what:`pick day ${dayLabel(+d)}: ${whites.length} white picks need ${press.toFixed(1)} press hours against a ${G.workDayHrs}-hour day`,consequences:'whole clusters wait for the press',remedies:'pick one block a day later or use a larger press'}));
+  // One day's crush line and press against everything picked that day; more than fits is overtime or a second shift.
+  const hrs=_W.crushHoursPerDay(G),rate=Math.min(_W.CRUSH_RATE,_W.sortRate(W.sort)),byDay={};
+  harvest.forEach(h=>{const b=byDay[h.day]||(byDay[h.day]={red:0,white:0,loads:0,names:new Set()});b[h.color]+=h.tons;if(h.color==='white')b.loads+=Math.ceil(h.tons/pressT-1e-9);b.names.add(h.name)});
+  for(const d in byDay){const b=byDay[d],line=b.red/rate,press=b.loads*_W.PRESS_CYCLE_HRS.white,names=[...b.names].join(' and ');
+    if(line>hrs+1e-9)exc.push(_X.exception('overtime',{constraint:'Crush line hours',wine:names,process:'Crush',what:`${dayLabel(+d)}: ${b.red.toFixed(1)} tons of reds need ${line.toFixed(1)} line hours against ${hrs} in the crush window`,consequences:'fruit waits on the pad or the crew works a longer day',remedies:'add a crush shift, spread the picks, or sort faster'}));
+    if(press>G.workDayHrs+1e-9)exc.push(_X.exception('overtime',{constraint:'White press hours',wine:names,process:'Pressing',what:`${dayLabel(+d)}: ${b.loads} white press loads need ${press.toFixed(1)} hours against a ${G.workDayHrs}-hour day`,consequences:'whole clusters wait for the press',remedies:'spread the picks or use a larger press'}));
   }
-  return {lots,pressT,short,exceptions:exc,winery:W,crushHrsDay:hrs};
+  return {lots,pressT,short,exceptions:exc,winery:W,crushHrsDay:hrs,harvest,byDay};
 }
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function dayLabel(doy){const dt=new Date(Date.UTC(2027,0,1)+(doy-1)*864e5);return MONTHS[dt.getUTCMonth()]+' '+dt.getUTCDate()}
 function flow(V,G,simulate){
-  const {lots:base,pressT,short,exceptions,winery}=lotPlan(V,G,simulate), kk=Math.max(1,G.lotsPerTank||1);
+  const {lots:base,pressT,short,exceptions,winery,harvest,crushHrsDay}=lotPlan(V,G,simulate), kk=Math.max(1,G.lotsPerTank||1);
   // enough overlaid vintages that every lot's whole life, from pick to the last case sold, lands in the normal-year window
   const maxEnd=Math.max(...base.flatMap(L=>L.segs.map(s=>s.b))), K=Math.max(3,Math.floor(maxEnd/365)), D=Math.max(365*4,Math.ceil((maxEnd+1)/365)*365);
-  // one tank size per tank type: the smallest standard size that holds the largest lot there
-  const size={};['redTank','whiteTank','storage','blend'].forEach(k=>{const mx=Math.max(0,...base.flatMap(l=>l.segs.filter(s=>s.loc===k).map(s=>k==='blend'?Math.max(s.wine,s.gal*s.n):k==='storage'?s.gal*Math.min(kk,l.n):s.gal)));size[k]=stdTank(mx)});
+  // one tank size per tank type: fermentors are the size chosen (lots are filled to fit them); lot and blending tanks
+  // are the smallest standard size that holds the largest lot there
+  const size={};['redTank','whiteTank','storage','blend'].forEach(k=>{const mx=Math.max(0,...base.flatMap(l=>l.segs.filter(s=>s.loc===k).map(s=>k==='blend'?Math.max(s.wine,s.gal*s.n):k==='storage'?s.gal*Math.min(kk,l.n):s.gal)));size[k]=k==='redTank'?Math.max(stdTank(G.redFermGal),stdTank(mx)):k==='whiteTank'?Math.max(stdTank(G.whiteFermGal),stdTank(mx)):stdTank(mx)});
   base.forEach(l=>l.segs.forEach(s=>{if(s.loc==='storage')s.units=1/Math.min(kk,l.n);else if(s.units==null)// a blend tank holds what actually arrives from barrel or tank, which until the lot ledger exists can exceed the finished volume
     s.units=s.loc==='blend'?Math.ceil(Math.max(s.wine,s.gal*s.n)/size.blend-1e-9)/s.n:Math.ceil(s.gal/size[s.loc]-1e-9)}));
   const mk=()=>{const o={};LOCS.forEach(([k])=>o[k]=new Float64Array(D));return o};
@@ -1017,7 +1023,7 @@ function flow(V,G,simulate){
   const installedB=Math.ceil(need.barrel.v*(G.barrelSpare||1.05)-1e-9);let emptyBarrelDays=0;for(let d=0;d<365;d++)emptyBarrelDays+=Math.max(0,installedB-ves.barrel[d]);
   // installed barrels are the combined peak plus spares; each wine's share of them follows its own peak
   const sumB=bPeak.reduce((a,b)=>a+b,0), bStock=bPeak.map(b=>sumB?installedB*b/sumB:0);
-  return {lots:base,lanes,lanes0,ves,ves0,size,need,fermFloor,bPeak,bStock,installedB,pressT,D,K,end,short,exceptions,winery,emptyBarrelDays};
+  return {harvest,crushHrsDay,lots:base,lanes,lanes0,ves,ves0,size,need,fermFloor,bPeak,bStock,installedB,pressT,D,K,end,short,exceptions,winery,emptyBarrelDays};
 }
 
 // Daily cellar work and equipment time, built lot by lot from the same calendar as the flow.
@@ -1029,14 +1035,16 @@ function work(FL,V,G,sz){
   const sortH=_W.SORT_LABOR[G.sort]??2.5,grav=G.buildTier==='gravity',GPH=3000,perHr=G.bottlePerDay/8;
   const put=(A,A0,key,d,h,k)=>{d=Math.floor(d);if(d<0||d>=D||!(h>0))return;A[key][d]+=h;if(k===0)A0[key][d]+=h};
   const spread=(A,A0,key,a,b,h,k)=>{if(!(h>0))return;for(let d=Math.max(0,Math.floor(a));d<Math.min(D,Math.ceil(b));d++){const w=Math.min(b,d+1)-Math.max(a,d);if(w>0){A[key][d]+=h*w;if(k===0)A0[key][d]+=h*w}}};
-  for(let k=-3;k<=1;k++){const o=365*k;FL.lots.forEach(L=>{
+  const rate=Math.min(_W.CRUSH_RATE,_W.sortRate(G.sort||'none')),setup=G.crushSetupHrs??2;
+  for(let k=-(FL.K||3);k<=1;k++){const o=365*k,crushDay={};FL.lots.forEach(L=>{
     const S=L.segs,red=L.color==='red',p=L.p+o;
-    put(T,T0,'crush',p,G.crushCrew*6+L.tons*(red?sortH:0.8),k);
-    put(E,E0,'crushline',p,red?L.crushHrs:0,k);put(E,E0,'forklift',p,L.bins*0.1,k);
-    if(red&&!grav)put(E,E0,'mustpump',p,L.mustGal/GPH+1,k);
-    const ps=S.find(s=>s.loc==='press');if(ps){put(E,E0,'press',ps.a+o,L.pressHrs,k);put(T,T0,'press',ps.a+o,2*L.pressHrs+2*L.loads,k)}
+    // crush on each pick day: sorting hours per ton now, the crew's day once all the day's picks are known
+    L.picks.forEach(pk=>{const d=pk.day-AUG1+o,line=pk.tons/(red?rate:_W.CRUSH_RATE);crushDay[d]=(crushDay[d]||0)+line;
+      put(T,T0,'crush',d,pk.tons*(red?sortH:0.8),k);put(E,E0,'crushline',d,red?line:0,k);put(E,E0,'forklift',d,Math.ceil(pk.tons/0.5-1e-9)*0.1,k);
+      if(red&&!grav)put(E,E0,'mustpump',d,pk.tons*180/GPH+1,k)});
+    S.filter(s=>s.loc==='press').forEach(ps=>{const h=red?L.pressHrs:ps.units*_W.PRESS_CYCLE_HRS.white;put(E,E0,'press',ps.a+o,h,k);put(T,T0,'press',ps.a+o,2*h+2*ps.units,k)});
     S.filter(s=>s.loc==='redTank').forEach(s=>{spread(T,T0,'cap',s.a+o,s.b+o,2*G.capHrs,k);spread(E,E0,'popump',s.a+o,s.b+o,0.5,k);spread(T,T0,'checks',s.a+o,s.b+o,0.25,k)});
-    if(!red)spread(T,T0,'checks',p+2,p+20,0.25,k);
+    if(!red)S.filter(s=>s.loc==='whiteTank').forEach(s=>spread(T,T0,'checks',s.a+o,s.b+o,0.25,k));
     const ws=S.filter(s=>!s.ev&&s.loc!=='bottled').sort((x,y)=>x.a-y.a);
     for(let i=1;i<ws.length;i++){const fr=ws[i-1],to=ws[i],d=to.a+o;
       put(E,E0,'xfer',d,grav&&to.loc==='barrel'?0.25:to.gal/GPH+0.5,k);put(T,T0,'moves',d,2+(fr.loc==='barrel'?0:2),k);
@@ -1049,7 +1057,8 @@ function work(FL,V,G,sz){
     spread(T,T0,'bottling',bot,bot+bd,(6*lh+4/L.n)/bd,k);spread(E,E0,'bottler',bot,bot+bd,lh/bd,k);spread(E,E0,'forklift',bot,bot+bd,L.cases/56*0.1/bd,k);
     put(T,T0,'moves',bot,2,k);
     spread(T,T0,'cases',L.release+o,L.release+o+365,L.cases*0.03/365,k);
-  })}
+  });
+  for(const d in crushDay)put(T,T0,'crush',+d,G.crushCrew*(setup+crushDay[d]),k)}
   const inst=sz&&sz.barrels||0,active=new Uint8Array(D);
   for(let d=0;d<D;d++){active[d]=FL.lanes.redTank[d]+FL.lanes.whiteTank[d]>0?1:0;
     const empty=Math.max(0,inst-FL.ves.barrel[d])*0.1/42, g=(active[d]?6:G.generalHrs/7)+empty;
@@ -1061,6 +1070,7 @@ function work(FL,V,G,sz){
 
 let V=deepCopy(VDEF), G=deepCopy(GDEF), M=null, finView='cash', tab='money', FL=null, rng='harvest', cur=75, unit='gal';
 const TCOL={crush:'light-dark(#6f7a2a,#bcc86a)',press:'light-dark(#8c7a66,#b7a593)',cap:'var(--wine)',checks:'light-dark(#c2577a,#e892ad)',moves:'var(--loan)',barrel:'var(--oak)',bottling:'var(--good)',cases:'light-dark(#2f8f8a,#7fd0c9)',general:'light-dark(#9a9a94,#6f6f69)'};
+const VCOL=['light-dark(#a8820f,#e5c25a)','light-dark(#6f7a2a,#bcc86a)','var(--wine)','light-dark(#4a5d8a,#9aaee0)','var(--oak)','light-dark(#2f8f8a,#7fd0c9)','light-dark(#c2577a,#e892ad)','var(--loan)'];
 const LCOL={pad:'light-dark(#6f7a2a,#bcc86a)',press:'light-dark(#8c7a66,#b7a593)',redTank:'var(--wine)',whiteTank:'light-dark(#a8820f,#e5c25a)',storage:'var(--loan)',blend:'light-dark(#4a5d8a,#9aaee0)',barrel:'var(--oak)',bottled:'var(--good)'};
 const fdate=d=>{const t=new Date(2001,7,1+Math.round(d)),y=t.getFullYear()-2001;return t.toLocaleDateString('en-US',{month:'short',day:'numeric'})+(y===0?', harvest year':y===1?', year after':`, harvest +${y}`)};
 const gal=v=>v>=1e4?(v/1000).toFixed(1)+'k':n0(v);
@@ -1085,12 +1095,48 @@ function drawFlow(){
     g+=`<text x="${m.l+4}" y="${y0+13}" font-size="13" font-weight="600" fill="var(--ink)">${name}</text><text x="${W-m.r-4}" y="${y0+13}" font-size="12" text-anchor="end" fill="${cap&&pk>cap?'var(--bad)':'var(--mute)'}">${unit==='ves'?`peak ${fmtU(k,pk)}${cap?` of ${n0(cap)}`:''} ${uName(k,cap||pk)}${FL.size[k]?` (${n0(FL.size[k])} gal)`:''}${k==='pad'||k==='press'?' a day':''}`:`peak ${gal(pk)} gal${cap?` of ${gal(cap)}`:k==='pad'||k==='press'?' a day':''}`}</text>`;
   });
   const step=rng==='harvest'?1:rng==='year'?1:3;
-  for(let mo=0;mo<60;mo+=step){const d=Math.round((new Date(2001,7+mo,1)-new Date(2001,7,1))/864e5);if(d<d0||d>d1)continue;const t=new Date(2001,7+mo,1);
+  for(let mo=0;mo<Math.ceil(FL.D/30.44);mo+=step){const d=Math.round((new Date(2001,7+mo,1)-new Date(2001,7,1))/864e5);if(d<d0||d>d1)continue;const t=new Date(2001,7+mo,1);
     g+=`<line x1="${x(d)}" x2="${x(d)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--rule)" stroke-opacity="0.6"/><text x="${x(d)+3}" y="${H-8}" font-size="12" fill="var(--mute)">${t.toLocaleDateString('en-US',{month:'short'})}${t.getMonth()<step||mo===0?" '"+String(t.getFullYear()-2001+26).padStart(2,'0'):''}</text>`}
   g+=`<line class="cur" data-x0="${m.l}" data-x1="${W-m.r}" x1="${x(cur)}" x2="${x(cur)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink)" stroke-width="2"/>`;
   s.innerHTML=g;
   const sc=$('scrub');sc.min=d0;sc.max=d1;sc.value=cur;
-  drawGantt(d0,d1);drawWork(d0,d1);snap();
+  drawGantt(d0,d1);drawWork(d0,d1);drawHarvest(d0,d1);snap();
+}
+// Harvest by day, as in the VEN 235 sheets: tons picked each day stacked by wine, the season's cumulative tons, and how
+// much one day's crush window (reds) and press day (whites) can take.
+function harvCaps(){const W=FL.winery,rate=Math.min(CRUSH_RATE,SORT_RATE[G.sort]??1e9);return {red:FL.crushHrsDay*rate,white:Math.floor(G.workDayHrs/PRESS_CYCLE_HRS.white)*W.press.tons}}
+function drawHarvest(d0,d1){
+  const s=$('sH'),Wd=s.clientWidth,H=s.clientHeight;if(!FL||!Wd)return;
+  const m={l:8,r:12,t:10,b:24},x=d=>m.l+(d-d0)/(d1-d0)*(Wd-m.l-m.r),days={},total=FL.harvest.reduce((a,h)=>a+h.tons,0);
+  FL.harvest.forEach(h=>{const d=h.day-AUG1;(days[d]=days[d]||V.map(()=>0))[h.wi]+=h.tons});
+  const caps=harvCaps();let top=Math.max(1,...Object.values(days).map(a=>a.reduce((p,q)=>p+q,0)));
+  const capShow=[['red',caps.red,'Red crush, one window'],['white',caps.white,'White press, one day']].filter(c=>c[1]<top*3);
+  capShow.forEach(c=>top=Math.max(top,c[1]));top*=1.12;
+  const yv=v=>H-m.b-v/top*(H-m.t-m.b);let g='';
+  const step=top>60?20:top>24?10:top>10?5:top>4?2:1;
+  for(let v=0;v<=top;v+=step)g+=`<line x1="${m.l}" x2="${Wd-m.r}" y1="${yv(v)}" y2="${yv(v)}" stroke="var(--rule)"/>${v?`<text x="${m.l+2}" y="${yv(v)-3}" font-size="11" fill="var(--mute)">${v} t</text>`:''}`;
+  const bw=Math.max(1,(x(d0+1)-x(d0))*0.82);
+  Object.entries(days).forEach(([d,a])=>{d=+d;if(d<d0||d>=d1)return;let b=0;a.forEach((t,i)=>{if(!t)return;g+=`<rect x="${(x(d)+(x(d+1)-x(d)-bw)/2).toFixed(1)}" y="${yv(b+t).toFixed(1)}" width="${bw.toFixed(1)}" height="${(yv(b)-yv(b+t)).toFixed(1)}" fill="${VCOL[i%VCOL.length]}"><title>${fdate(d).split(',')[0]}: ${t.toFixed(1)} tons of ${V[i].name}</title></rect>`;b+=t})});
+  capShow.forEach(([k,c,name])=>{g+=`<line x1="${m.l}" x2="${Wd-m.r}" y1="${yv(c)}" y2="${yv(c)}" stroke="var(--ink)" stroke-dasharray="5 4" stroke-width="1.2"/><text x="${Wd-m.r-4}" y="${yv(c)-4}" font-size="12" text-anchor="end" fill="var(--mute)">${name}: ${c.toFixed(0)} tons</text>`});
+  // cumulative share of the season, against the right of the plot
+  let cum=0,path='';const keys=Object.keys(days).map(Number).sort((a,b)=>a-b);
+  for(let d=d0;d<=d1;d++){if(days[d])cum+=days[d].reduce((p,q)=>p+q,0);const y=H-m.b-(cum/total)*(H-m.t-m.b);path+=`${d===d0?'M':'L'}${x(d).toFixed(1)},${y.toFixed(1)}`}
+  if(total)g+=`<path d="${path}" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-opacity="0.55"/><text x="${Wd-m.r-4}" y="${m.t+12}" font-size="12" text-anchor="end" fill="var(--mute)">Line: share of the ${total.toFixed(1)}-ton season picked</text>`;
+  const stepM=rng==='vintage'?3:1;
+  for(let mo=0;mo<Math.ceil(FL.D/30.44);mo+=stepM){const d=Math.round((new Date(2001,7+mo,1)-new Date(2001,7,1))/864e5);if(d<d0||d>d1)continue;const t=new Date(2001,7+mo,1);g+=`<text x="${x(d)+3}" y="${H-8}" font-size="12" fill="var(--mute)">${t.toLocaleDateString('en-US',{month:'short'})}</text>`}
+  g+=`<line class="cur" data-x0="${m.l}" data-x1="${Wd-m.r}" x1="${x(cur)}" x2="${x(cur)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink)" stroke-width="2"/>`;
+  s.innerHTML=g;
+  const first=keys[0],last=keys[keys.length-1],peak=keys.reduce((a,d)=>days[d].reduce((p,q)=>p+q,0)>days[a].reduce((p,q)=>p+q,0)?d:a,first);
+  const nl=FL.lots.length,picks=FL.harvest.length;
+  const capTxt=capShow.length<2?` One crush window takes ${caps.red.toFixed(0)} tons of reds and one press day ${caps.white.toFixed(0)} tons of whites${capShow.length?'':', both well above any day here'}.`:'';
+  $('harvLede').textContent=`${total.toFixed(1)} tons picked over ${last-first+1} days, ${fdate(first).split(',')[0]} to ${fdate(last).split(',')[0]}, in half-ton steps on each wine's curve. The busiest day is ${fdate(peak).split(',')[0]} with ${days[peak].reduce((p,q)=>p+q,0).toFixed(1)} tons. ${picks} variety picks fill ${nl} fermentor lots: a tank takes each day's fruit until it is full, or until the ${G.fillDays}-day fill window has passed and it is at least ${G.minFillPct}% full.`+capTxt;
+  $('harvLegend').innerHTML=V.map((v,i)=>`<span><i style="background:${VCOL[i%VCOL.length]}"></i>${v.name}</span>`).join('')+(capShow.length?`<span><i style="background:var(--ink);height:2px"></i>One day's capacity (dashed)</span>`:'');
+  harvNow();
+}
+function harvNow(){if(!FL||!$('harvNow'))return;const today=FL.harvest.filter(h=>h.day-AUG1===cur);
+  if(!today.length){$('harvNow').textContent=`${fdate(cur).split(',')[0]}: nothing picked.`;return}
+  const caps=harvCaps(),red=today.filter(h=>h.color==='red').reduce((a,h)=>a+h.tons,0),white=today.filter(h=>h.color==='white').reduce((a,h)=>a+h.tons,0),bins=today.reduce((a,h)=>a+Math.ceil(h.tons/0.5-1e-9),0);
+  $('harvNow').textContent=`${fdate(cur).split(',')[0]}: `+today.map(h=>`${h.tons.toFixed(1)} tons of ${h.name}`).join(', ')+`, ${bins} half-ton bins.`+(red?` Reds use ${Math.round(red/caps.red*100)}% of the crush window.`:'')+(white?` Whites use ${Math.round(white/caps.white*100)}% of a press day.`:'');
 }
 function drawWork(d0,d1){
   const own=G.facility==='build'&&M.lbr;$('workBlock').hidden=!own;if(!own)return;
@@ -1162,7 +1208,7 @@ function workNow(d){
 function flowLede(){
   if(G.facility!=='build'){$('flowLede').textContent='Custom crush: this is your wine moving through someone else\'s cellar, so there is nothing to size and no capacity lines. Barrel counts still set how many barrels you buy.';return}
   const S=M.sz,N=FL.need,mg=Math.round((G.designFactor-1)*100);
-  $('flowLede').textContent=`The equipment list is sized from this flow: the most vessels in use on any day of a normal year, plus the ${mg}% design margin. That gives ${S.nRed} red ferment tanks of ${n0(FL.size.redTank)} gallons, ${S.nW} white tanks of ${n0(FL.size.whiteTank)}, ${S.nS} lot tanks of ${n0(FL.size.storage)}, ${S.nB} blending tanks of ${n0(FL.size.blend)}, and ${n0(S.barrels)} barrels (peak ${n0(N.barrel.v)} in use plus spares). Each tank type is the smallest standard size that holds the largest lot. Lower the design margin under the assumptions to see where it breaks.`+(FL.exceptions.length?` Departures from the plan as set: `+FL.exceptions.map(e=>`${e.wine}${e.lot!=null&&e.lot!==undefined?' lot '+(e.lot+1):''}, ${e.process.toLowerCase()}: ${e.what}. ${e.remedies?'Options: '+e.remedies+'.':''}`).join(' '):'');
+  $('flowLede').textContent=`The equipment list is sized from this flow: the most vessels in use on any day of a normal year, plus the ${mg}% design margin. That gives ${S.nRed} red ferment tanks of ${n0(FL.size.redTank)} gallons, ${S.nW} white tanks of ${n0(FL.size.whiteTank)}, ${S.nS} lot tanks of ${n0(FL.size.storage)}, ${S.nB} blending tanks of ${n0(FL.size.blend)}, and ${n0(S.barrels)} barrels (peak ${n0(N.barrel.v)} in use plus spares). Fermentors are the size set under Harvest, and each lot is filled to fit one; lot and blending tanks are the smallest standard size that holds the largest lot. Lower the design margin under the assumptions to see where it breaks.`+(FL.exceptions.length?` Departures from the plan as set: `+FL.exceptions.map(e=>`${e.wine}${e.lot!=null&&e.lot!==undefined?' lot '+(e.lot+1):''}, ${e.process.toLowerCase()}: ${e.what}. ${e.remedies?'Options: '+e.remedies+'.':''}`).join(' '):'');
 }
 function renderFlow(){if(tab!=='flow')return;FL=M.FL;const S=M.sz;
   FL.vcaps=G.facility==='build'?{redTank:S.nRed,whiteTank:S.nW,storage:S.nS,blend:S.nB,barrel:S.barrels}:{};
@@ -1207,7 +1253,7 @@ const groups=[
  ['Equipment and barrels',[['jacketGal','Jacketed tank cost at 1,000 gal',4,20,0.5,v=>'$'+v+'/gal'],['storageGal','Storage tank cost at 1,000 gal',3,15,0.5,v=>'$'+v+'/gal'],['hoseFt','2" wine hose',5,60,1,v=>'$'+v+'/ft'],['designFactor','Design margin over peak vessels in use',0.7,1.5,0.05,v=>'+'+Math.round((v-1)*100)+'%'],['barrelNew','New barrel',600,2000,25,v=>'$'+v],['barrelUsed','Used barrel',100,800,25,v=>'$'+v],['lotsPerTank','Lots of one wine sharing a lot tank after press',1,4,1,v=>v===1?'kept separate':v+' lots'],['barrelSpare','Spare barrels over peak',1,1.2,0.01,v=>'+'+Math.round((v-1)*100)+'%']]],
  ['Production',[['otherSupplies','Other cellar supplies, not itemized',0,8,0.25,v=>'$'+v.toFixed(2)+'/case'],['customCase','Custom crush fee',20,120,1,v=>'$'+v+'/case'],['labelSet','Labels, front and back',0.05,1.5,0.01,v=>'$'+v.toFixed(2)+'/bottle'],['carton','Carton',1,6,0.1,v=>'$'+v.toFixed(2)],['bottling','Mobile bottling',1,8,0.25,v=>'$'+v.toFixed(2)+'/case']]],
  ['Cellar practice',[['yanHarvest','YAN at harvest',60,400,5,v=>v+' mg/L'],['yanTarget21','YAN target at 21 Brix',120,350,5,v=>v+' mg/L'],['yanPerBrix','More YAN per Brix above 21',0,50,1,v=>v+' mg/L'],['yeastRate','Yeast inoculation',10,50,1,v=>v+' g/hL'],['complexRate','Complex nutrient',0,60,1,v=>v+' g/hL'],['acidRed','Tartaric addition, reds',0,3,0.1,v=>v.toFixed(1)+' g/L'],['acidWhite','Tartaric addition, whites',0,3,0.1,v=>v.toFixed(1)+' g/L'],['bentWhite','Bentonite, whites',0,2,0.05,v=>v.toFixed(2)+' g/L'],['so2Crush','SO2 at crush',0,80,5,v=>v+' mg/L'],['so2PostAF','SO2 after ML, or after ferment without ML',0,100,5,v=>v+' mg/L'],['so2Rack','SO2 at each racking',0,40,5,v=>v+' mg/L'],['so2Barrel','SO2 top-up in barrel',0,30,1,v=>v+' mg/L'],['so2BarrelDays','Barrel SO2 top-up every',20,120,5,v=>v+' days'],['so2Bottle','SO2 before bottling',0,50,5,v=>v+' mg/L'],['dryIceLbTon','Dry ice in cold soak',0,100,5,v=>v+' lb/ton'],['filterPasses','Pad filtration passes',0,3,1,v=>v?v+' before bottling':'unfiltered']]],
- ['Harvest',[['harvestSpread','Pick spread, all varieties',0.2,2,0.1,v=>v===1?'as set per wine':Math.round(v*100)+'% of normal'],['lotTons','Largest single pick',2,60,1,v=>v+' tons'],['crushShifts','Crush shifts a day',1,2,1,v=>v===1?'one':'two'],['crushShiftHrs','Shift length',6,12,0.5,v=>v+' hr'],['crushSetupHrs','Crush setup and cleanup',0,4,0.5,v=>v+' hr a day'],['workDayHrs','Working day for the press',8,24,1,v=>v+' hr']]],
+ ['Harvest',[['redFermGal','Red fermentor size',500,8000,500,v=>n0(v)+' gal'],['whiteFermGal','White fermentor size',500,8000,500,v=>n0(v)+' gal'],['fillDays','Fill window for a fermentor',1,5,1,v=>v+(v===1?' day':' days')],['minFillPct','Minimum fermentor fill',0,90,5,v=>v+'%'],['harvestSpread','Pick spread, all varieties',0.2,2,0.1,v=>v===1?'as set per wine':Math.round(v*100)+'% of normal'],['lotTons','Largest lot',2,60,1,v=>v+' tons'],['crushShifts','Crush shifts a day',1,2,1,v=>v===1?'one':'two'],['crushShiftHrs','Shift length',6,12,0.5,v=>v+' hr'],['crushSetupHrs','Crush setup and cleanup',0,4,0.5,v=>v+' hr a day'],['workDayHrs','Working day for the press',8,24,1,v=>v+' hr']]],
  ['People',[['ownerSalary','Owner salary as winemaker',0,250000,5000,money],['wmSalary','Hired winemaker salary',60000,250000,5000,money],['burden','Payroll burden',10,40,1,v=>v+'%'],['trStaff','Tasting room staff',0,500000,10000,v=>money(v)+'/yr'],['adminCost','Admin, compliance, accounting',0,250000,5000,v=>money(v)+'/yr']]],
  ['Labor',[['cellarWage','Cellar worker wage',17.13,40,0.25,v=>'$'+v.toFixed(2)+'/hr'],['seasonalWage','Harvest worker wage',17.13,35,0.25,v=>'$'+v.toFixed(2)+'/hr'],['seasonalBurden','Seasonal payroll burden',5,30,1,v=>v+'%'],['bottlePerDay','Mobile bottling line',400,3000,100,v=>n0(v)+' cases/day'],['crushCrew','Crew on a crush day',2,10,1,v=>v+' people'],['capHrs','Per pumpover or punchdown',0.1,1,0.05,v=>v.toFixed(2)+' hr'],['generalHrs','General cellar work off-season',0,60,1,v=>v+' hr/week'],['wmHarvestHrs','Winemaker hands-on, harvest',0,70,1,v=>v+' hr/week'],['wmCellarHrs','Winemaker hands-on, rest of year',0,40,1,v=>v+' hr/week'],['permHarvestHrs','Full-time crew hours in harvest',40,70,1,v=>v+' hr/week']]],
  ['Overhead',[['utilBase','Utilities base',0,80000,1000,money],['insurePct','Insurance',0,2,0.1,v=>v+'% of capital'],['maintPct','Maintenance',0,4,0.1,v=>v+'% of build and equipment'],['marketingPct','Marketing',0,15,0.5,v=>v+'% of revenue'],['dtcFeePct','Card and DTC fees',0,6,0.5,v=>v+'%'],['trLease','Tasting room lease (custom crush)',0,200000,5000,v=>money(v)+'/yr']]],
@@ -1359,7 +1405,7 @@ function setTab(){
 let curRAF=0;
 function moveCursor(){if(curRAF)return;curRAF=requestAnimationFrame(()=>{curRAF=0;const[d0,d1]=rangeOf(),f=(cur-d0)/(d1-d0);
   document.querySelectorAll('#flowView line.cur').forEach(l=>{const x=+l.dataset.x0+f*(+l.dataset.x1-l.dataset.x0);l.setAttribute('x1',x);l.setAttribute('x2',x)});
-  $('scrub').value=cur;snap();if(locked)lockNote()})}
+  $('scrub').value=cur;snap();harvNow();if(locked)lockNote()})}
 $('scrub').addEventListener('input',e=>{cur=+e.target.value;moveCursor()});
 $('snap').addEventListener('click',e=>{const r=e.target.closest('[data-loc]');if(!r)return;selLoc=selLoc===r.dataset.loc?null:r.dataset.loc;snap()});
 $('snap').addEventListener('keydown',e=>{const r=e.target.closest('[data-loc]');if(r&&(e.key==='Enter'||e.key===' ')){e.preventDefault();selLoc=selLoc===r.dataset.loc?null:r.dataset.loc;snap();$('snap').querySelector(`[data-loc="${r.dataset.loc}"]`).focus()}});
@@ -1374,10 +1420,10 @@ document.addEventListener('keydown',e=>{
 
 // hovering a chart follows the mouse; clicking a chart locks the date there (click again or Esc to follow the mouse again)
 let locked=false;
-function dayAt(id,e){const r=$(id).getBoundingClientRect(),[d0,d1]=rangeOf(),l={sF:8,sG:150,sL:40,sE:8}[id],rr=12;const f=(e.clientX-r.left-l)/(r.width-l-rr);return f<0||f>1?null:Math.round(d0+f*(d1-d0))}
+function dayAt(id,e){const r=$(id).getBoundingClientRect(),[d0,d1]=rangeOf(),l={sF:8,sG:150,sL:40,sE:8,sH:8}[id],rr=12;const f=(e.clientX-r.left-l)/(r.width-l-rr);return f<0||f>1?null:Math.round(d0+f*(d1-d0))}
 function setLock(on){locked=on;$('flowView').classList.toggle('locked',on);lockNote()}
 function lockNote(){$('lockNote').innerHTML=locked?`<b>Date locked on ${fdate(cur).split(',')[0]}.</b> Click a chart or press <kbd>esc</kbd> to follow the mouse again.`:'Following the mouse. Click a chart to lock the date.'}
-['sF','sG','sL','sE'].forEach(id=>{
+['sF','sG','sL','sE','sH'].forEach(id=>{
   $(id).addEventListener('pointermove',e=>{if(!FL||locked)return;const d=dayAt(id,e);if(d==null)return;cur=d;moveCursor()});
   $(id).addEventListener('click',e=>{if(!FL)return;const d=dayAt(id,e);if(locked){setLock(false);if(d!=null){cur=d;moveCursor()}}else{if(d!=null){cur=d;moveCursor()}setLock(true)}});
 });
