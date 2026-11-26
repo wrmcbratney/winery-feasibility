@@ -1,37 +1,37 @@
 {
  "base": {
-  "equityCash": 5627121,
+  "equityCash": 5706961,
   "paybackCash": 11,
   "irrCash": 10.15,
-  "capex": 3788986,
-  "labor": 47446
+  "capex": 3913548,
+  "labor": 34833
  },
  "estate": {
-  "equityCash": 6717833,
+  "equityCash": 6786517,
   "paybackCash": 12,
-  "irrCash": 8.82,
-  "capex": 4757218,
-  "labor": 47446
+  "irrCash": 8.83,
+  "capex": 4882980,
+  "labor": 34833
  },
  "custom": {
-  "equityCash": 2453126,
+  "equityCash": 2437510,
   "paybackCash": 8,
-  "irrCash": 21.58,
+  "irrCash": 21.74,
   "capex": 100000,
   "labor": 0
  },
  "gravity": {
-  "equityCash": 8284692,
+  "equityCash": 8491511,
   "paybackCash": 14,
-  "irrCash": 6.2,
-  "capex": 6178249,
-  "labor": 47446
+  "irrCash": 6.09,
+  "capex": 6429553,
+  "labor": 34833
  },
  "hire": {
-  "equityCash": 5727121,
+  "equityCash": 5794512,
   "paybackCash": 13,
-  "irrCash": 7.78,
-  "capex": 3788986,
-  "labor": 47446
+  "irrCash": 7.82,
+  "capex": 3913548,
+  "labor": 34833
  }
 }

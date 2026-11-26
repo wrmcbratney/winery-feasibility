@@ -102,7 +102,7 @@ test('7. case storage holds the within-year peak', () => {
 });
 
 test('8. seasonal workers past 40 hours a week are paid overtime', () => {
-  const m = run({ crushCrew: 8, capHrs: 0.6 }, scale(VDEF, 3)), L = m.lbr, G = m.G;
+  const m = run({ crushCrew: 8, capHrs: 1 }, scale(VDEF, 6)), L = m.lbr, G = m.G;
   assert.ok(L.seasonalOTHrs > 0, 'a big harvest pushes seasonal crew past 40 hours');
   const sb = 1 + G.seasonalBurden / 100;
   assert.ok(Math.abs(L.cost.seasonalOT - L.seasonalOTHrs * G.seasonalWage * 0.5 * sb) < 1e-6);

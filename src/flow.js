@@ -6,7 +6,7 @@ const UNIT={pad:['bin','bins'],press:['press load','press loads'],redTank:['tank
 const AUG1=213, MIDOCT=288-213, MO=30.44, GAL_CASE=2.378, BBL=59.4, STD_TANK=[500,750,1000,1500,2000,2500,3000,4000,5000,6000,8000];
 const flowCache={};
 const _X=typeof exception==='function'?{exception}:require('./exceptions.js');
-const _W=typeof lotParams==='function'?{wineryFor,lotParams,crushHours,jacketBTU,PRESS_CYCLE_HRS,SORT_LABOR}:require('./winery.js');
+const _W=typeof lotParams==='function'?{wineryFor,lotParams,crushHours,jacketBTU,PRESS_CYCLE_HRS,SORT_LABOR,CRUSH_RATE,crushHoursPerDay,pickCapTons,pickDays,sortRate}:require('./winery.js');
 function lotSim(v,tons,pick,W,simulate){
   const p=_W.lotParams(v,tons,pick,W),k=JSON.stringify(p);
   if(!flowCache[k])flowCache[k]=simulate(p);
@@ -16,15 +16,17 @@ const stdTank=gal=>STD_TANK.find(s=>s>=gal)||STD_TANK[STD_TANK.length-1];
 function lotPlan(V,G,simulate){
   const lots=[], short={}, exc=[], seen=new Set(), flag=(key,cls,o)=>{if(!seen.has(key)){seen.add(key);exc.push(_X.exception(cls,o))}};
   // red ferment tank size first (it depends only on lot volume), so each lot's jacket cooling comes from the tank it sits in
-  const split=v=>{const tons=v.cases/v.cpt,n=Math.max(1,Math.ceil(tons/G.lotTons-1e-9));return {tons,n,lt:tons/n}};
+  // A lot is one pick. A variety is picked in as few picks as the winemaker's largest lot and one day's crush or press
+  // capacity allow, so a small block comes in all at once.
   const W0=_W.wineryFor(V,G,0);
+  const split=v=>{const tons=v.cases/v.cpt,cap=Math.min(G.lotTons,_W.pickCapTons(v.color,W0,G)),n=Math.max(1,Math.ceil(tons/cap-1e-9));return {tons,n,lt:tons/n,cap}};
   const redGal=Math.max(0,...V.filter(v=>v.color==='red').map(v=>{const {lt}=split(v),q=_W.lotParams(v,lt,0,W0);return lt*q.mustGal*(1+q.headspace/100)}));
   const W=_W.wineryFor(V,G,redGal?stdTank(redGal):0), pressT=W.press.tons;
   V.forEach((v,wi)=>{
-    const {n,lt}=split(v), cases=v.cases/n;
+    const {n,lt}=split(v), cases=v.cases/n, days=_W.pickDays(v,n,G);
     const bm=Math.min(v.bottle??(v.barrel>0?Math.round((v.color==='red'?6:0.5)+v.barrel+1):5),v.release),bottle=MIDOCT+bm*MO, release=MIDOCT+v.release*MO;
     for(let j=0;j<n;j++){
-      const pick=(v.pick??270)+j*2, p=pick-AUG1, S=[];
+      const pick=days[j], p=pick-AUG1, S=[];
       const seg=(loc,a,b,gal,units,x)=>{if(b>a)S.push({loc,a:p+a,b:p+b,gal,units,...x})};
       const ev=(loc,a,gal,units)=>S.push({loc,a:p+a,b:p+a+1,gal,units,ev:true});
       const bot=bottle-p, bl=bot-21, wineGal=v.cases*GAL_CASE*1.03, bins=Math.ceil(lt/0.5-1e-9), loads=Math.ceil(lt/pressT-1e-9);
@@ -65,8 +67,19 @@ function lotPlan(V,G,simulate){
       lots.push({wi,name:v.name,j,n,tons:lt,cases,wineCases:v.cases,pick,p,color:v.color,segs:S,bottle,release,bins,loads,crushHrs,pressHrs,mustGal:lt*180});
     }
   });
-  return {lots,pressT,short,exceptions:exc,winery:W};
+  // One day's crush line and press against what was picked that day; more than fits is overtime or a second shift.
+  const hrs=_W.crushHoursPerDay(G),byDay={};
+  lots.forEach(L=>{(byDay[L.pick]=byDay[L.pick]||[]).push(L)});
+  for(const d in byDay){const Ls=byDay[d],reds=Ls.filter(L=>L.color==='red'),whites=Ls.filter(L=>L.color==='white');
+    const line=reds.reduce((a,L)=>a+L.tons/Math.min(_W.CRUSH_RATE,_W.sortRate(W.sort)),0), press=whites.reduce((a,L)=>a+L.loads*_W.PRESS_CYCLE_HRS.white,0);
+    const names=[...new Set(Ls.map(L=>L.name))].join(' and ');
+    if(line>hrs+1e-9)exc.push(_X.exception('overtime',{constraint:'Crush line hours',wine:names,process:'Crush',what:`pick day ${dayLabel(+d)}: ${reds.reduce((a,L)=>a+L.tons,0).toFixed(1)} tons of reds need ${line.toFixed(1)} line hours against ${hrs} in the crush window`,consequences:'fruit waits on the pad or the crew works a longer day',remedies:'add a crush shift, pick one block a day later, or sort faster'}));
+    if(press>G.workDayHrs+1e-9)exc.push(_X.exception('overtime',{constraint:'White press hours',wine:names,process:'Pressing',what:`pick day ${dayLabel(+d)}: ${whites.length} white picks need ${press.toFixed(1)} press hours against a ${G.workDayHrs}-hour day`,consequences:'whole clusters wait for the press',remedies:'pick one block a day later or use a larger press'}));
+  }
+  return {lots,pressT,short,exceptions:exc,winery:W,crushHrsDay:hrs};
 }
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function dayLabel(doy){const dt=new Date(Date.UTC(2027,0,1)+(doy-1)*864e5);return MONTHS[dt.getUTCMonth()]+' '+dt.getUTCDate()}
 function flow(V,G,simulate){
   const {lots:base,pressT,short,exceptions,winery}=lotPlan(V,G,simulate), kk=Math.max(1,G.lotsPerTank||1);
   // enough overlaid vintages that every lot's whole life, from pick to the last case sold, lands in the normal-year window
@@ -92,12 +105,16 @@ function flow(V,G,simulate){
   for(const key in grp){const g=grp[key],k0=key.endsWith('|0');for(let d=0;d<D;d++)if(g.u[d]>0){const n=Math.max(Math.ceil(g.u[d]-1e-9),Math.ceil(g.gal[d]/size.storage-1e-9));ves.storage[d]+=n;if(k0)ves0.storage[d]+=n}}
   const peak=(a)=>{let mx=0,at=0;for(let d=0;d<365;d++)if(a[d]>mx){mx=a[d];at=d}return{v:mx,at}};
   const need={};LOCS.forEach(([k])=>need[k]=peak(ves[k]));
+  // VEN 235 floor: fermenting volume divided by tank size, as if lots could be split freely across tanks. Whole lots in
+  // whole tanks can never do better, so the vessel count must sit at or above it.
+  const floorOf=k=>{let m=0;for(let d=0;d<365;d++)m=Math.max(m,lanes[k][d]/size[k]);return m};
+  const fermFloor={redTank:size.redTank?floorOf('redTank'):0,whiteTank:size.whiteTank?floorOf('whiteTank'):0};
   const bPeak=bWine.map(a=>peak(a).v);
   const end=Math.max(...base.map(L=>L.release+365));
   const installedB=Math.ceil(need.barrel.v*(G.barrelSpare||1.05)-1e-9);let emptyBarrelDays=0;for(let d=0;d<365;d++)emptyBarrelDays+=Math.max(0,installedB-ves.barrel[d]);
   // installed barrels are the combined peak plus spares; each wine's share of them follows its own peak
   const sumB=bPeak.reduce((a,b)=>a+b,0), bStock=bPeak.map(b=>sumB?installedB*b/sumB:0);
-  return {lots:base,lanes,lanes0,ves,ves0,size,need,bPeak,bStock,installedB,pressT,D,K,end,short,exceptions,winery,emptyBarrelDays};
+  return {lots:base,lanes,lanes0,ves,ves0,size,need,fermFloor,bPeak,bStock,installedB,pressT,D,K,end,short,exceptions,winery,emptyBarrelDays};
 }
 
 // Daily cellar work and equipment time, built lot by lot from the same calendar as the flow.

@@ -151,3 +151,18 @@ Headline changes at default (base scenario), all from physical corrections:
 Built at the owner's request ahead of the ledger. Each wine picks glass, closure and capsule from a priced list; labels, carton and mobile bottling stay winery-wide. Still wines only; sparkling (crown caps, tirage, riddling, disgorging) is deferred as its own process path. Chemicals are counted from each lot's events and priced from supplier lists; usage rates are placeholders under Cellar practice until the owner sets his own. The nutrient plan (YAN target by Brix, complex nutrient then DAP, capped at 0.96 g/L under 27 CFR 24.246) is the same one the fermentation kinetics use, so a lot ferments with the nitrogen it was given. An explicit $1.00 a case covers supplies not itemized.
 
 Results at default: dry goods fall about $20,600 a year (whites move to screwcap, Cabernet to heavy glass and natural cork); itemized chemicals and supplies come to about $10,600 a year against $32,000 under the old flat $8 a case; with nutrient additions the red ferments run 3 to 5 days shorter. Cash IRR 9.55% to 10.15%, payback 12 to 11 years. Open: the owner's own rates for SO2, nutrients, acid, fining, gas and cleaning, and his package per wine.
+
+## 13. Aligning with the VEN 235 coursework (November 2026)
+
+The owner's original VEN 235 Winery Design workbook (not copied into the repo) covered the front of harvest: arrival, crush rate, bins and fermentors. Three of its ideas are now in the model, on the branch `harvest-arrival`:
+
+- **Arrival on curves.** Each variety's tons arrive on a normal curve (mean pick day, spread in days). The curve is cut into equal slices with one pick at the middle of each, so it stays deterministic. A whole-harvest spread multiplier is the first stress lever: below 1 compresses picks.
+- **One lot per pick, sized by a day's capacity.** A variety is picked in as few picks as the largest lot and one day of crush (reds: crush line and sorting in a 6-hour window) or press (whites: press cycles in a 16-hour day) allow. At default the three small varieties come in as one pick each and Cabernet in two, 5 lots instead of 15. A day whose picks need more line or press hours than the window is reported as overtime.
+- **The fermentor floor.** Fermenting volume over tank size, the coursework's fractional tank count, is computed beside the whole-tank count, and a test holds the whole-tank count at or above it. At default the red peak is 2 tanks against a floor of 1.92.
+
+Not yet aligned: the coursework's tank time uses fermentation days of 55 times e to the minus 0.07 T (T in C). The kinetics agree at red temperatures (8 days at 28C against 8; 7.5 at 30C against 7) but run faster in the cold (10.5 days at 20C against 14). That matters for white ferments in step 4. The coursework used 480 L of juice per ton for whites, against 170 gal (643 L) here; the units of its tons are still to confirm. Its Cabernet stays 32 days in tank with 21 days of post-ferment maceration, against 7 days here.
+
+Two effects of bigger lots that are artifacts rather than findings, to fix in later steps:
+
+- One tank size per role, sized to the largest lot, puts small lots in oversized tanks. Tank gallons rise, and with them the fermentation hall and the chiller (about $125,000 of capex at default). Step 3's mixed fleets address this.
+- Pumpover time is a fixed 0.33 hours per lot whatever its volume, so cellar labor falls about $12,600 a year at default partly because lots got bigger. Cap management time should scale with tank volume; it belongs with the owner's task times.

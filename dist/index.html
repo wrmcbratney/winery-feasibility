@@ -396,6 +396,34 @@ const SORT_LABOR={none:1,hand:2.5,optical:1.3}; // crew hours per ton on the lin
 const JACKET_BAND=1/3;                       // jacket covers about a third of the wall height
 const _S=typeof nutrientPlan==='function'?{nutrientPlan}:require('./supplies.js');
 function sortRate(sort){return (typeof SORT_RATE!=='undefined'?SORT_RATE:require('./core.js').SORT_RATE)[sort]??1e9}
+// Hours the crush line runs in a day: crush shifts less setup and cleanup (VEN 235: one 8-hour shift less 2 hours).
+function crushHoursPerDay(G){return Math.max(1,G.crushShifts*G.crushShiftHrs-G.crushSetupHrs)}
+// The most fruit one day can take for a given color. Reds are limited by the crush line and sorting inside the crush
+// window; whites go whole cluster to the press, which can cycle through the working day, and through sorting if any.
+function pickCapTons(color,W,G){
+  const hrs=crushHoursPerDay(G), sr=sortRate(W.sort);
+  if(color==='red')return hrs*Math.min(CRUSH_RATE,sr);
+  const press=Math.floor(G.workDayHrs/PRESS_CYCLE_HRS.white)*W.press.tons;
+  return W.sort&&W.sort!=='none'?Math.min(press,hrs*sr):press;
+}
+// Inverse standard normal (Acklam), for placing picks on a variety's arrival curve.
+function normInv(p){
+  const a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.357751867269,-30.66479806614716,2.506628277459239],
+   b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155211027],
+   c=[-0.007784894002430293,-0.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783],
+   d=[0.007784695709041462,0.3224671290700398,2.445134137142996,3.754408661907416],q=Math.min(p,1-p);
+  let x;
+  if(q<0.02425){const r=Math.sqrt(-2*Math.log(q));x=(((((c[0]*r+c[1])*r+c[2])*r+c[3])*r+c[4])*r+c[5])/((((d[0]*r+d[1])*r+d[2])*r+d[3])*r+1)}
+  else{const r=p-0.5,s=r*r;x=(((((a[0]*s+a[1])*s+a[2])*s+a[3])*s+a[4])*s+a[5])*r/(((((b[0]*s+b[1])*s+b[2])*s+b[3])*s+b[4])*s+1);return x}
+  return p<0.5?x:-x;
+}
+// Pick days for a variety: its tonnage arrives on a normal curve (mean pick day, spread in days, VEN 235), cut into n
+// equal slices; each pick sits at the middle of its slice. Deterministic, so a stress harvest is a change of mean or spread.
+function pickDays(v,n,G){
+  const sd=(v.pickSD??2)*(G.harvestSpread??1),out=[];
+  for(let k=0;k<n;k++){let d=Math.round((v.pick??270)+(n>1?sd*normInv((k+0.5)/n):0));if(k&&d<=out[k-1])d=out[k-1]+1;out.push(d)}
+  return out;
+}
 function pressFor(allTons){return PRESSES.find(p=>allTons<=p.upTo)}
 function crushHours(tons,color,sort){return tons/Math.min(CRUSH_RATE,sortRate(sort))+CRUSH_SETUP_HRS[color]}
 // Cooling a jacket can deliver to the tank it is on: jacket area (a third of the wall of a tank 1.5 times as tall as wide)
@@ -422,26 +450,26 @@ function lotParams(v,tons,pick,W){
 // 20-year winery feasibility engine. Annual steps, year 0 = land, engineering, build. First harvest in year 1.
 // Variety presets. Washington grape prices are the Wine Commission's 2022 average by variety scaled by the
 // all-variety rise to 2024 (+18%), except Cabernet (2025 actual), Merlot (2024 actual), Malbec (2024, derived) and Pinot Noir (Oregon 2025).
-// pick = first pick day of year (lots follow every 2 days); soak = cold soak days, setF = ferment temperature, ext = extended maceration days after dryness.
+// pick = mean pick day of year, pickSD = spread of picks in days (each variety arrives on a normal curve, as in VEN 235); soak = cold soak days, setF = ferment temperature, ext = extended maceration days after dryness.
 const VARIETIES={
- 'Cabernet Sauvignon':{pick:283,color:'red',grape:3170,tpa:3.5,cpt:60,brix:26,barrel:20,newOak:50,release:30,price:70,soak:3,setF:85,ext:7,glass:'heavy',closure:'natural',capsule:'polylam',ml:true},
- 'Merlot':{pick:268,color:'red',grape:2595,tpa:4,cpt:60,brix:25,barrel:18,newOak:35,release:28,price:50,soak:3,setF:84,ext:3,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
- 'Cabernet Franc':{pick:278,color:'red',grape:2450,tpa:3.5,cpt:60,brix:25,barrel:18,newOak:35,release:28,price:55,soak:3,setF:84,ext:3,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
- 'Petit Verdot':{pick:288,color:'red',grape:2270,tpa:3.5,cpt:58,brix:26,barrel:20,newOak:40,release:30,price:55,soak:3,setF:85,ext:5,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
- 'Malbec':{pick:272,color:'red',grape:1500,tpa:4,cpt:60,brix:25.5,barrel:16,newOak:30,release:26,price:45,soak:3,setF:85,ext:3,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
- 'Syrah':{pick:265,color:'red',grape:1580,tpa:4,cpt:60,brix:25.5,barrel:16,newOak:25,release:26,price:50,soak:2,setF:82,ext:0,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
- 'Grenache':{pick:276,color:'red',grape:1900,tpa:4.5,cpt:62,brix:25.5,barrel:10,newOak:0,release:18,price:40,soak:2,setF:80,ext:0,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
- 'Mourvedre':{pick:285,color:'red',grape:1810,tpa:4,cpt:60,brix:25,barrel:14,newOak:10,release:22,price:42,soak:2,setF:82,ext:0,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
- 'Sangiovese':{pick:275,color:'red',grape:1480,tpa:4.5,cpt:62,brix:24.5,barrel:12,newOak:10,release:20,price:38,soak:2,setF:84,ext:3,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
- 'Pinot Noir':{pick:262,color:'red',grape:2800,tpa:2.8,cpt:58,brix:24.5,barrel:11,newOak:25,release:18,price:50,soak:4,setF:82,ext:0,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
- 'Chardonnay':{pick:255,color:'white',grape:1200,tpa:4,cpt:62,brix:23.5,barrel:10,newOak:30,release:12,price:40,glass:'standard',closure:'technical',capsule:'polylam',ml:true},
- 'Sauvignon Blanc':{pick:245,color:'white',grape:1170,tpa:5,cpt:65,brix:23,barrel:0,newOak:0,release:8,price:28,glass:'standard',closure:'screwcap',capsule:'none',ml:false},
- 'Semillon':{pick:255,color:'white',grape:1630,tpa:4.5,cpt:65,brix:23,barrel:8,newOak:10,release:12,price:32,glass:'standard',closure:'screwcap',capsule:'none',ml:false},
- 'Viognier':{pick:256,color:'white',grape:1360,tpa:4,cpt:62,brix:24,barrel:6,newOak:0,release:10,price:32,glass:'standard',closure:'screwcap',capsule:'none',ml:false},
- 'Riesling':{pick:260,color:'white',grape:1030,tpa:5.5,cpt:68,brix:22,barrel:0,newOak:0,release:8,price:25,glass:'standard',closure:'screwcap',capsule:'none',ml:false},
- 'Chenin Blanc':{pick:262,color:'white',grape:1220,tpa:5,cpt:65,brix:22.5,barrel:6,newOak:0,release:10,price:28,glass:'standard',closure:'screwcap',capsule:'none',ml:false},
- 'Pinot Gris':{pick:250,color:'white',grape:1020,tpa:5,cpt:65,brix:22.5,barrel:0,newOak:0,release:8,price:25,glass:'standard',closure:'screwcap',capsule:'none',ml:false},
- 'Gewurztraminer':{pick:255,color:'white',grape:860,tpa:5,cpt:65,brix:22.5,barrel:0,newOak:0,release:8,price:24,glass:'standard',closure:'screwcap',capsule:'none',ml:false}
+ 'Cabernet Sauvignon':{pick:283,color:'red',grape:3170,tpa:3.5,cpt:60,brix:26,barrel:20,newOak:50,release:30,price:70,soak:3,setF:85,ext:7,glass:'heavy',closure:'natural',capsule:'polylam',ml:true,pickSD:2.5},
+ 'Merlot':{pick:268,color:'red',grape:2595,tpa:4,cpt:60,brix:25,barrel:18,newOak:35,release:28,price:50,soak:3,setF:84,ext:3,glass:'standard',closure:'technical',capsule:'polylam',ml:true,pickSD:2},
+ 'Cabernet Franc':{pick:278,color:'red',grape:2450,tpa:3.5,cpt:60,brix:25,barrel:18,newOak:35,release:28,price:55,soak:3,setF:84,ext:3,glass:'standard',closure:'technical',capsule:'polylam',ml:true,pickSD:2},
+ 'Petit Verdot':{pick:288,color:'red',grape:2270,tpa:3.5,cpt:58,brix:26,barrel:20,newOak:40,release:30,price:55,soak:3,setF:85,ext:5,glass:'standard',closure:'technical',capsule:'polylam',ml:true,pickSD:2},
+ 'Malbec':{pick:272,color:'red',grape:1500,tpa:4,cpt:60,brix:25.5,barrel:16,newOak:30,release:26,price:45,soak:3,setF:85,ext:3,glass:'standard',closure:'technical',capsule:'polylam',ml:true,pickSD:2},
+ 'Syrah':{pick:265,color:'red',grape:1580,tpa:4,cpt:60,brix:25.5,barrel:16,newOak:25,release:26,price:50,soak:2,setF:82,ext:0,glass:'standard',closure:'technical',capsule:'polylam',ml:true,pickSD:2},
+ 'Grenache':{pick:276,color:'red',grape:1900,tpa:4.5,cpt:62,brix:25.5,barrel:10,newOak:0,release:18,price:40,soak:2,setF:80,ext:0,glass:'standard',closure:'technical',capsule:'polylam',ml:true,pickSD:2},
+ 'Mourvedre':{pick:285,color:'red',grape:1810,tpa:4,cpt:60,brix:25,barrel:14,newOak:10,release:22,price:42,soak:2,setF:82,ext:0,glass:'standard',closure:'technical',capsule:'polylam',ml:true,pickSD:2},
+ 'Sangiovese':{pick:275,color:'red',grape:1480,tpa:4.5,cpt:62,brix:24.5,barrel:12,newOak:10,release:20,price:38,soak:2,setF:84,ext:3,glass:'standard',closure:'technical',capsule:'polylam',ml:true,pickSD:2},
+ 'Pinot Noir':{pick:262,color:'red',grape:2800,tpa:2.8,cpt:58,brix:24.5,barrel:11,newOak:25,release:18,price:50,soak:4,setF:82,ext:0,glass:'standard',closure:'technical',capsule:'polylam',ml:true,pickSD:2.5},
+ 'Chardonnay':{pick:255,color:'white',grape:1200,tpa:4,cpt:62,brix:23.5,barrel:10,newOak:30,release:12,price:40,glass:'standard',closure:'technical',capsule:'polylam',ml:true,pickSD:1.5},
+ 'Sauvignon Blanc':{pick:245,color:'white',grape:1170,tpa:5,cpt:65,brix:23,barrel:0,newOak:0,release:8,price:28,glass:'standard',closure:'screwcap',capsule:'none',ml:false,pickSD:2.5},
+ 'Semillon':{pick:255,color:'white',grape:1630,tpa:4.5,cpt:65,brix:23,barrel:8,newOak:10,release:12,price:32,glass:'standard',closure:'screwcap',capsule:'none',ml:false,pickSD:2},
+ 'Viognier':{pick:256,color:'white',grape:1360,tpa:4,cpt:62,brix:24,barrel:6,newOak:0,release:10,price:32,glass:'standard',closure:'screwcap',capsule:'none',ml:false,pickSD:2},
+ 'Riesling':{pick:260,color:'white',grape:1030,tpa:5.5,cpt:68,brix:22,barrel:0,newOak:0,release:8,price:25,glass:'standard',closure:'screwcap',capsule:'none',ml:false,pickSD:2},
+ 'Chenin Blanc':{pick:262,color:'white',grape:1220,tpa:5,cpt:65,brix:22.5,barrel:6,newOak:0,release:10,price:28,glass:'standard',closure:'screwcap',capsule:'none',ml:false,pickSD:2},
+ 'Pinot Gris':{pick:250,color:'white',grape:1020,tpa:5,cpt:65,brix:22.5,barrel:0,newOak:0,release:8,price:25,glass:'standard',closure:'screwcap',capsule:'none',ml:false,pickSD:2},
+ 'Gewurztraminer':{pick:255,color:'white',grape:860,tpa:5,cpt:65,brix:22.5,barrel:0,newOak:0,release:8,price:24,glass:'standard',closure:'screwcap',capsule:'none',ml:false,pickSD:2}
 };
 // Bottling is the winemaker's call; the default is a month after barrel time ends (reds reach barrel in spring, about month 6).
 const defBottle=v=>v.barrel>0?Math.round((v.color==='red'?6:0.5)+v.barrel+1):5;
@@ -464,7 +492,7 @@ const GDEF={
  customCase:45, capHrs:0.33, crushCrew:4, bottlePerDay:1200, shiftHrs:10, generalHrs:20, harvestWeeks:8, wmHarvestHrs:45, wmCellarHrs:15, permHarvestHrs:55, cellarWage:24, seasonalWage:20, seasonalBurden:15, tankLeaseCustom:0,
  labelSet:0.30, carton:2.5, bottling:3.5,
  wmSalary:120000, burden:25, ownerSalary:100000, adminCost:60000, trStaff:190000, trLease:60000,
- propTaxPct:1, offsiteCaseMonth:0.35, offsiteInOut:1, offsiteAdmin:3000, testsPerLot:15, testExt:40, lotTons:5, labWage:30,
+ propTaxPct:1, offsiteCaseMonth:0.35, offsiteInOut:1, offsiteAdmin:3000, testsPerLot:15, testExt:40, lotTons:30, workDayHrs:16, crushShifts:1, crushShiftHrs:8, crushSetupHrs:2, harvestSpread:1, labWage:30,
  utilBase:20000, utilCase:1.5, insurePct:0.5, maintPct:1.5, marketingPct:6, dtcFeePct:3,
  shareTR:[42,28,30], shareNoTR:[10,15,75], clubDisc:15, wholesaleFactor:50,
  ramp:[35,55,75,90,100],
@@ -530,7 +558,7 @@ function size(V,G,simulate,FL){
   const df=G.designFactor,mg=Math.round((df-1)*100);
   const nRed=Math.ceil(N.redTank.v*df-1e-9),tankSize=S.redTank,nW=Math.ceil(N.whiteTank.v*df-1e-9),nS=Math.ceil(N.storage.v*df-1e-9),nB=Math.ceil(N.blend.v*df-1e-9);
   const redGal=nRed*tankSize, tankCost=(gal,per)=>Math.round(per*1000*Math.pow(gal/1000,0.62)/50)*50;
-  add('Tanks','Jacketed red ferment tanks',nRed,tankSize.toLocaleString()+' gal',tankCost(tankSize,G.jacketGal),`${Math.round(N.redTank.v)} in use at the peak around ${when('redTank')}, one lot each, plus ${mg}% margin`,'Medium');
+  add('Tanks','Jacketed red ferment tanks',nRed,tankSize.toLocaleString()+' gal',tankCost(tankSize,G.jacketGal),`${Math.round(N.redTank.v)} in use at the peak around ${when('redTank')}, plus ${mg}% margin; if lots could be split freely across tanks the peak would need ${FL.fermFloor.redTank.toFixed(1)}`,'Medium');
   add('Tanks','Jacketed white tanks',nW,S.whiteTank.toLocaleString()+' gal',tankCost(S.whiteTank,G.jacketGal),`${Math.round(N.whiteTank.v)} in use at the peak around ${when('whiteTank')}, settling and fermenting, plus ${mg}% margin`,'Medium');
   add('Tanks','Lot tanks for ML and storage',nS,S.storage.toLocaleString()+' gal',tankCost(S.storage,G.storageGal),`${Math.round(N.storage.v)} in use at the peak around ${when('storage')}, up to ${G.lotsPerTank} lots of the same wine combined after press: reds through ML until spring, unoaked whites, wine between barrel and blending; plus ${mg}% margin`,'Medium');
   add('Tanks','Blending and bottling tanks',nB,S.blend.toLocaleString()+' gal',tankCost(S.blend,G.storageGal),`each wine comes together three weeks before bottling; ${Math.round(N.blend.v)} in use at the peak around ${when('blend')}`,'Medium');
@@ -641,7 +669,7 @@ function plan(Vin,Gin,simulate){
   const FL=getFlow()(V,G,simulate);
   const sz=own?size(V,G,simulate,FL):{items:[],equip:0,barrels:0};
   // ---- lab program ----
-  const lots=V.reduce((a,v)=>a+Math.max(1,Math.ceil(tonsOf(v)/G.lotTons)),0);
+  const lots=FL.lots.length; // one lot per pick
   const tests=lots*G.testsPerLot, L=LAB[own?G.lab:'outsource'];
   const outShare=own?1-L.share:0.5; // custom crush covers about half of routine testing in its fee
   const labYear=tests*(outShare*G.testExt+(own?L.share:0)*(L.consum+L.hrs*G.labWage));
@@ -867,6 +895,10 @@ const SOURCES=[
  ['DAP limit','0.96 g/L','Ammonium phosphate as a yeast nutrient must not exceed 8 lb per 1,000 gallons (0.96 g/L) of wine, 27 CFR 24.246. The model caps DAP there and reports any nitrogen still short.','High','https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-24/subpart-L/section-24.246'],
  ['Cellar practice rates','YAN 180 at harvest, target 200 at 21 Brix plus 25 per Brix; yeast 25 g/hL; SO2 30 at crush, 50 after ML, 15 per racking, 10 every 60 days in barrel, 20 before bottling (mg/L); tartaric 1.0 reds, 0.5 whites (g/L); bentonite 0.5 g/L whites; dry ice 15 lb/ton','Placeholders for the owner\'s own practice, not sourced. Complex nutrient assumed to give about 25 mg/L YAN at 25 g/hL. Cleaning assumes recirculated solution of 1.5% of tank volume (at least 15 gal) at 14 g/gal percarbonate and 4 g/gal citric.','Low',''],
  ['Other cellar supplies','$1.00/case','Enzymes, tannins, other fining agents, sanitizer, gaskets and the like, not itemized. Estimate.','Low',''],
+ ['Harvest arrival','Each variety on a normal curve: mean pick day and spread in days (Chardonnay 1.5, Sauvignon Blanc, Pinot Noir and Cabernet 2.5, others 2)','Method from the owner\'s VEN 235 Winery Design coursework (UC Davis): tons arrive on a normal curve per variety. Here the curve is cut into equal slices, one pick at the middle of each. Spreads are the coursework values; the others are estimates.','Low',''],
+ ['Lot size','One lot per pick; a variety takes as few picks as the largest lot (30 tons) and one day of crush or press allow','A small block is picked in one go. Reds are limited by the crush line and sorting inside the crush window; whites by press cycles in a working day. Estimate.','Low',''],
+ ['Crush window','One 8-hour crush shift less 2 hours of setup and cleanup: 6 hours a day; the press can run a 16-hour day','VEN 235 coursework work-day assumptions: a 16-hour day of two 8-hour shifts, one for crush. Days over the window are reported as overtime.','Low',''],
+ ['Fermentor floor','Fermenting volume divided by tank size, as if lots split freely across tanks','VEN 235 coursework method for fermentors needed. Whole lots in whole tanks must come in at or above it; shown beside the red tank count.','Medium',''],
 ];
 
 // Steady-state cellar flow: every lot of several overlapping vintages, day by day, by location, in gallons and vessels.
@@ -877,7 +909,7 @@ const UNIT={pad:['bin','bins'],press:['press load','press loads'],redTank:['tank
 const AUG1=213, MIDOCT=288-213, MO=30.44, GAL_CASE=2.378, BBL=59.4, STD_TANK=[500,750,1000,1500,2000,2500,3000,4000,5000,6000,8000];
 const flowCache={};
 const _X=typeof exception==='function'?{exception}:require('./exceptions.js');
-const _W=typeof lotParams==='function'?{wineryFor,lotParams,crushHours,jacketBTU,PRESS_CYCLE_HRS,SORT_LABOR}:require('./winery.js');
+const _W=typeof lotParams==='function'?{wineryFor,lotParams,crushHours,jacketBTU,PRESS_CYCLE_HRS,SORT_LABOR,CRUSH_RATE,crushHoursPerDay,pickCapTons,pickDays,sortRate}:require('./winery.js');
 function lotSim(v,tons,pick,W,simulate){
   const p=_W.lotParams(v,tons,pick,W),k=JSON.stringify(p);
   if(!flowCache[k])flowCache[k]=simulate(p);
@@ -887,15 +919,17 @@ const stdTank=gal=>STD_TANK.find(s=>s>=gal)||STD_TANK[STD_TANK.length-1];
 function lotPlan(V,G,simulate){
   const lots=[], short={}, exc=[], seen=new Set(), flag=(key,cls,o)=>{if(!seen.has(key)){seen.add(key);exc.push(_X.exception(cls,o))}};
   // red ferment tank size first (it depends only on lot volume), so each lot's jacket cooling comes from the tank it sits in
-  const split=v=>{const tons=v.cases/v.cpt,n=Math.max(1,Math.ceil(tons/G.lotTons-1e-9));return {tons,n,lt:tons/n}};
+  // A lot is one pick. A variety is picked in as few picks as the winemaker's largest lot and one day's crush or press
+  // capacity allow, so a small block comes in all at once.
   const W0=_W.wineryFor(V,G,0);
+  const split=v=>{const tons=v.cases/v.cpt,cap=Math.min(G.lotTons,_W.pickCapTons(v.color,W0,G)),n=Math.max(1,Math.ceil(tons/cap-1e-9));return {tons,n,lt:tons/n,cap}};
   const redGal=Math.max(0,...V.filter(v=>v.color==='red').map(v=>{const {lt}=split(v),q=_W.lotParams(v,lt,0,W0);return lt*q.mustGal*(1+q.headspace/100)}));
   const W=_W.wineryFor(V,G,redGal?stdTank(redGal):0), pressT=W.press.tons;
   V.forEach((v,wi)=>{
-    const {n,lt}=split(v), cases=v.cases/n;
+    const {n,lt}=split(v), cases=v.cases/n, days=_W.pickDays(v,n,G);
     const bm=Math.min(v.bottle??(v.barrel>0?Math.round((v.color==='red'?6:0.5)+v.barrel+1):5),v.release),bottle=MIDOCT+bm*MO, release=MIDOCT+v.release*MO;
     for(let j=0;j<n;j++){
-      const pick=(v.pick??270)+j*2, p=pick-AUG1, S=[];
+      const pick=days[j], p=pick-AUG1, S=[];
       const seg=(loc,a,b,gal,units,x)=>{if(b>a)S.push({loc,a:p+a,b:p+b,gal,units,...x})};
       const ev=(loc,a,gal,units)=>S.push({loc,a:p+a,b:p+a+1,gal,units,ev:true});
       const bot=bottle-p, bl=bot-21, wineGal=v.cases*GAL_CASE*1.03, bins=Math.ceil(lt/0.5-1e-9), loads=Math.ceil(lt/pressT-1e-9);
@@ -936,8 +970,19 @@ function lotPlan(V,G,simulate){
       lots.push({wi,name:v.name,j,n,tons:lt,cases,wineCases:v.cases,pick,p,color:v.color,segs:S,bottle,release,bins,loads,crushHrs,pressHrs,mustGal:lt*180});
     }
   });
-  return {lots,pressT,short,exceptions:exc,winery:W};
+  // One day's crush line and press against what was picked that day; more than fits is overtime or a second shift.
+  const hrs=_W.crushHoursPerDay(G),byDay={};
+  lots.forEach(L=>{(byDay[L.pick]=byDay[L.pick]||[]).push(L)});
+  for(const d in byDay){const Ls=byDay[d],reds=Ls.filter(L=>L.color==='red'),whites=Ls.filter(L=>L.color==='white');
+    const line=reds.reduce((a,L)=>a+L.tons/Math.min(_W.CRUSH_RATE,_W.sortRate(W.sort)),0), press=whites.reduce((a,L)=>a+L.loads*_W.PRESS_CYCLE_HRS.white,0);
+    const names=[...new Set(Ls.map(L=>L.name))].join(' and ');
+    if(line>hrs+1e-9)exc.push(_X.exception('overtime',{constraint:'Crush line hours',wine:names,process:'Crush',what:`pick day ${dayLabel(+d)}: ${reds.reduce((a,L)=>a+L.tons,0).toFixed(1)} tons of reds need ${line.toFixed(1)} line hours against ${hrs} in the crush window`,consequences:'fruit waits on the pad or the crew works a longer day',remedies:'add a crush shift, pick one block a day later, or sort faster'}));
+    if(press>G.workDayHrs+1e-9)exc.push(_X.exception('overtime',{constraint:'White press hours',wine:names,process:'Pressing',what:`pick day ${dayLabel(+d)}: ${whites.length} white picks need ${press.toFixed(1)} press hours against a ${G.workDayHrs}-hour day`,consequences:'whole clusters wait for the press',remedies:'pick one block a day later or use a larger press'}));
+  }
+  return {lots,pressT,short,exceptions:exc,winery:W,crushHrsDay:hrs};
 }
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function dayLabel(doy){const dt=new Date(Date.UTC(2027,0,1)+(doy-1)*864e5);return MONTHS[dt.getUTCMonth()]+' '+dt.getUTCDate()}
 function flow(V,G,simulate){
   const {lots:base,pressT,short,exceptions,winery}=lotPlan(V,G,simulate), kk=Math.max(1,G.lotsPerTank||1);
   // enough overlaid vintages that every lot's whole life, from pick to the last case sold, lands in the normal-year window
@@ -963,12 +1008,16 @@ function flow(V,G,simulate){
   for(const key in grp){const g=grp[key],k0=key.endsWith('|0');for(let d=0;d<D;d++)if(g.u[d]>0){const n=Math.max(Math.ceil(g.u[d]-1e-9),Math.ceil(g.gal[d]/size.storage-1e-9));ves.storage[d]+=n;if(k0)ves0.storage[d]+=n}}
   const peak=(a)=>{let mx=0,at=0;for(let d=0;d<365;d++)if(a[d]>mx){mx=a[d];at=d}return{v:mx,at}};
   const need={};LOCS.forEach(([k])=>need[k]=peak(ves[k]));
+  // VEN 235 floor: fermenting volume divided by tank size, as if lots could be split freely across tanks. Whole lots in
+  // whole tanks can never do better, so the vessel count must sit at or above it.
+  const floorOf=k=>{let m=0;for(let d=0;d<365;d++)m=Math.max(m,lanes[k][d]/size[k]);return m};
+  const fermFloor={redTank:size.redTank?floorOf('redTank'):0,whiteTank:size.whiteTank?floorOf('whiteTank'):0};
   const bPeak=bWine.map(a=>peak(a).v);
   const end=Math.max(...base.map(L=>L.release+365));
   const installedB=Math.ceil(need.barrel.v*(G.barrelSpare||1.05)-1e-9);let emptyBarrelDays=0;for(let d=0;d<365;d++)emptyBarrelDays+=Math.max(0,installedB-ves.barrel[d]);
   // installed barrels are the combined peak plus spares; each wine's share of them follows its own peak
   const sumB=bPeak.reduce((a,b)=>a+b,0), bStock=bPeak.map(b=>sumB?installedB*b/sumB:0);
-  return {lots:base,lanes,lanes0,ves,ves0,size,need,bPeak,bStock,installedB,pressT,D,K,end,short,exceptions,winery,emptyBarrelDays};
+  return {lots:base,lanes,lanes0,ves,ves0,size,need,fermFloor,bPeak,bStock,installedB,pressT,D,K,end,short,exceptions,winery,emptyBarrelDays};
 }
 
 // Daily cellar work and equipment time, built lot by lot from the same calendar as the flow.
@@ -1139,7 +1188,7 @@ const decisions=[
 const buildOnly=['buildTier','storage','lab','sort','ozone'];
 $('decisions').innerHTML=decisions.map(([k,l,opts])=>`<div><div class="dlab">${l}</div><div class="seg">${opts.map(([v,t])=>`<button data-d="${k}" data-v="${v}">${t}</button>`).join('')}</div></div>`).join('');
 
-const wcols=[['cases','Cases/yr',100,20000,50],['price','Retail $/btl',10,300,1],['bottle','Months to bottling',2,60,1],['release','Months to release',3,72,1],['barrel','Months in barrel',0,36,1],['newOak','% new oak',0,100,5],['grape','Grapes $/ton',500,15000,50]];
+const wcols=[['cases','Cases/yr',100,20000,50],['pick','Mean pick day of year',220,320,1],['pickSD','Pick spread, days',0,10,0.5],['price','Retail $/btl',10,300,1],['bottle','Months to bottling',2,60,1],['release','Months to release',3,72,1],['barrel','Months in barrel',0,36,1],['newOak','% new oak',0,100,5],['grape','Grapes $/ton',500,15000,50]];
 function renderWines(){
   $('wines').innerHTML=`<thead><tr><th>Wine</th><th></th><th>Color</th>${wcols.map(c=>`<th>${c[1]}</th>`).join('')}<th>Glass</th><th>Closure</th><th>Capsule</th><th>Tons</th></tr></thead><tbody>`+
    V.map((v,i)=>`<tr><td><select data-i="${i}" data-f="name" aria-label="Variety">${varOpts(v.name)}</select></td><td><button data-rm="${i}" aria-label="Remove ${v.name}" title="Remove"${V.length<2?' disabled':''}>&times;</button></td><td><select data-i="${i}" data-f="color" aria-label="${v.name} color"><option value="white"${v.color==='white'?' selected':''}>white</option><option value="red"${v.color==='red'?' selected':''}>red</option></select></td>${wcols.map(([f,,mn,mx,st])=>`<td><input type="number" data-i="${i}" data-f="${f}" min="${mn}" max="${mx}" step="${st}" value="${v[f]}" aria-label="${v.name} ${f}"></td>`).join('')}${[['glass',GLASS],['closure',CLOSURE],['capsule',CAPSULE]].map(([f,T])=>{const cur=pkgOf(v)[f];return `<td><select data-i="${i}" data-f="${f}" aria-label="${v.name} ${f}">${Object.entries(T).map(([k,o])=>`<option value="${k}"${k===cur?' selected':''}>${o.name} ($${o.cost.toFixed(2)})</option>`).join('')}</select></td>`}).join('')}<td>${(v.cases/v.cpt).toFixed(1)}</td></tr>`).join('')+
@@ -1158,12 +1207,13 @@ const groups=[
  ['Equipment and barrels',[['jacketGal','Jacketed tank cost at 1,000 gal',4,20,0.5,v=>'$'+v+'/gal'],['storageGal','Storage tank cost at 1,000 gal',3,15,0.5,v=>'$'+v+'/gal'],['hoseFt','2" wine hose',5,60,1,v=>'$'+v+'/ft'],['designFactor','Design margin over peak vessels in use',0.7,1.5,0.05,v=>'+'+Math.round((v-1)*100)+'%'],['barrelNew','New barrel',600,2000,25,v=>'$'+v],['barrelUsed','Used barrel',100,800,25,v=>'$'+v],['lotsPerTank','Lots of one wine sharing a lot tank after press',1,4,1,v=>v===1?'kept separate':v+' lots'],['barrelSpare','Spare barrels over peak',1,1.2,0.01,v=>'+'+Math.round((v-1)*100)+'%']]],
  ['Production',[['otherSupplies','Other cellar supplies, not itemized',0,8,0.25,v=>'$'+v.toFixed(2)+'/case'],['customCase','Custom crush fee',20,120,1,v=>'$'+v+'/case'],['labelSet','Labels, front and back',0.05,1.5,0.01,v=>'$'+v.toFixed(2)+'/bottle'],['carton','Carton',1,6,0.1,v=>'$'+v.toFixed(2)],['bottling','Mobile bottling',1,8,0.25,v=>'$'+v.toFixed(2)+'/case']]],
  ['Cellar practice',[['yanHarvest','YAN at harvest',60,400,5,v=>v+' mg/L'],['yanTarget21','YAN target at 21 Brix',120,350,5,v=>v+' mg/L'],['yanPerBrix','More YAN per Brix above 21',0,50,1,v=>v+' mg/L'],['yeastRate','Yeast inoculation',10,50,1,v=>v+' g/hL'],['complexRate','Complex nutrient',0,60,1,v=>v+' g/hL'],['acidRed','Tartaric addition, reds',0,3,0.1,v=>v.toFixed(1)+' g/L'],['acidWhite','Tartaric addition, whites',0,3,0.1,v=>v.toFixed(1)+' g/L'],['bentWhite','Bentonite, whites',0,2,0.05,v=>v.toFixed(2)+' g/L'],['so2Crush','SO2 at crush',0,80,5,v=>v+' mg/L'],['so2PostAF','SO2 after ML, or after ferment without ML',0,100,5,v=>v+' mg/L'],['so2Rack','SO2 at each racking',0,40,5,v=>v+' mg/L'],['so2Barrel','SO2 top-up in barrel',0,30,1,v=>v+' mg/L'],['so2BarrelDays','Barrel SO2 top-up every',20,120,5,v=>v+' days'],['so2Bottle','SO2 before bottling',0,50,5,v=>v+' mg/L'],['dryIceLbTon','Dry ice in cold soak',0,100,5,v=>v+' lb/ton'],['filterPasses','Pad filtration passes',0,3,1,v=>v?v+' before bottling':'unfiltered']]],
+ ['Harvest',[['harvestSpread','Pick spread, all varieties',0.2,2,0.1,v=>v===1?'as set per wine':Math.round(v*100)+'% of normal'],['lotTons','Largest single pick',2,60,1,v=>v+' tons'],['crushShifts','Crush shifts a day',1,2,1,v=>v===1?'one':'two'],['crushShiftHrs','Shift length',6,12,0.5,v=>v+' hr'],['crushSetupHrs','Crush setup and cleanup',0,4,0.5,v=>v+' hr a day'],['workDayHrs','Working day for the press',8,24,1,v=>v+' hr']]],
  ['People',[['ownerSalary','Owner salary as winemaker',0,250000,5000,money],['wmSalary','Hired winemaker salary',60000,250000,5000,money],['burden','Payroll burden',10,40,1,v=>v+'%'],['trStaff','Tasting room staff',0,500000,10000,v=>money(v)+'/yr'],['adminCost','Admin, compliance, accounting',0,250000,5000,v=>money(v)+'/yr']]],
  ['Labor',[['cellarWage','Cellar worker wage',17.13,40,0.25,v=>'$'+v.toFixed(2)+'/hr'],['seasonalWage','Harvest worker wage',17.13,35,0.25,v=>'$'+v.toFixed(2)+'/hr'],['seasonalBurden','Seasonal payroll burden',5,30,1,v=>v+'%'],['bottlePerDay','Mobile bottling line',400,3000,100,v=>n0(v)+' cases/day'],['crushCrew','Crew on a crush day',2,10,1,v=>v+' people'],['capHrs','Per pumpover or punchdown',0.1,1,0.05,v=>v.toFixed(2)+' hr'],['generalHrs','General cellar work off-season',0,60,1,v=>v+' hr/week'],['wmHarvestHrs','Winemaker hands-on, harvest',0,70,1,v=>v+' hr/week'],['wmCellarHrs','Winemaker hands-on, rest of year',0,40,1,v=>v+' hr/week'],['permHarvestHrs','Full-time crew hours in harvest',40,70,1,v=>v+' hr/week']]],
  ['Overhead',[['utilBase','Utilities base',0,80000,1000,money],['insurePct','Insurance',0,2,0.1,v=>v+'% of capital'],['maintPct','Maintenance',0,4,0.1,v=>v+'% of build and equipment'],['marketingPct','Marketing',0,15,0.5,v=>v+'% of revenue'],['dtcFeePct','Card and DTC fees',0,6,0.5,v=>v+'%'],['trLease','Tasting room lease (custom crush)',0,200000,5000,v=>money(v)+'/yr']]],
  ['Water',[['dripAcre','Drip and filtration',1000,8000,100,v=>money(v)+'/acre'],['afPerAcre','Vineyard water use',0.5,4,0.1,v=>v.toFixed(1)+' acre-ft/acre/yr'],['districtAcre','Irrigation district assessment',0,500,10,v=>'$'+v+'/acre/yr'],['waterRightAF','Water right price',500,10000,100,v=>money(v)+'/acre-ft'],['rightTransfer','Water right transfer work',0,100000,2500,money],['irrWellDepth','Irrigation well depth',100,1200,25,v=>v+' ft'],['irrWellFt','Irrigation well drilling',30,200,5,v=>'$'+v+'/ft'],['liftFt','Pumping lift',50,1000,25,v=>v+' ft'],['kwh','Power',0.04,0.25,0.005,v=>'$'+v.toFixed(3)+'/kWh'],['wineryWellDepth','Winery well depth',50,1000,25,v=>v+' ft'],['wineryWellFt','Winery well drilling',20,120,1,v=>'$'+v+'/ft'],['waterRatio','Process water',1,10,0.5,v=>v+' gal per gal of wine']]],
  ['Excise tax',[['fedExcise','Federal rate before credit',0.5,2,0.01,v=>'$'+v.toFixed(2)+'/gal'],['waTaxL','Washington wine tax',0,0.6,0.0001,v=>'$'+v.toFixed(4)+'/liter'],['waShare','Direct sales to Washington residents',0,100,5,v=>v+'%']]],
- ['Storage, tax and lab',[['propTaxPct','Property tax',0,2,0.05,v=>v.toFixed(2)+'% of land, building, equipment'],['offsiteCaseMonth','Off-site storage',0.1,1,0.05,v=>'$'+v.toFixed(2)+'/case/month'],['offsiteInOut','Off-site handling',0,3,0.25,v=>'$'+v.toFixed(2)+'/case in or out'],['offsiteAdmin','Off-site bond admin',0,10000,250,v=>money(v)+'/yr'],['lotTons','Tons per lot',1,20,1,v=>v+' tons'],['testsPerLot','Analyses per lot per year',3,40,1,v=>v],['testExt','Outside lab price',10,100,1,v=>'$'+v+'/analysis'],['labWage','Lab time',15,60,1,v=>'$'+v+'/hr']]],
+ ['Storage, tax and lab',[['propTaxPct','Property tax',0,2,0.05,v=>v.toFixed(2)+'% of land, building, equipment'],['offsiteCaseMonth','Off-site storage',0.1,1,0.05,v=>'$'+v.toFixed(2)+'/case/month'],['offsiteInOut','Off-site handling',0,3,0.25,v=>'$'+v.toFixed(2)+'/case in or out'],['offsiteAdmin','Off-site bond admin',0,10000,250,v=>money(v)+'/yr'],['testsPerLot','Analyses per lot per year',3,40,1,v=>v],['testExt','Outside lab price',10,100,1,v=>'$'+v+'/analysis'],['labWage','Lab time',15,60,1,v=>'$'+v+'/hr']]],
  ['Sales',[['clubDisc','Club discount',0,30,1,v=>v+'%'],['wholesaleFactor','Wholesale price',30,70,1,v=>v+'% of retail']]],
  ['Financing',[['loanLTV','Loan share of startup capital',0,90,5,v=>v+'%'],['loanRate','Interest rate',3,12,0.25,v=>v+'%'],['loanTerm','Term',5,30,1,v=>v+' years'],['reserve','Minimum cash reserve',25000,1000000,25000,money],['distPct','Share of excess cash distributed',0,100,5,v=>v+'%'],['discount','Discount rate for NPV',3,15,0.5,v=>v+'%']]]
 ];
@@ -1285,7 +1335,7 @@ function run(skipWines){
   $('cardLoan').innerHTML=l.loanAmt?card(l,'With a loan'):`<h3>With a loan</h3><div class="sub">Nothing to borrow against: no land, building or equipment in this setup.</div>`;
   if(!skipWines)renderWines();else renderWines();
   syncControls();implied();years();drawJ();drawY();FL=null;renderFlow();
-  try{localStorage.setItem('feasV12',JSON.stringify({V,G}))}catch(e){}
+  try{localStorage.setItem('feasV13',JSON.stringify({V,G}))}catch(e){}
 }
 document.addEventListener('click',e=>{
   const d=e.target.closest('[data-d]');if(d){const k=d.dataset.d,v=d.dataset.v;G[k]=v==='true'?true:v==='false'?false:v;run();return}
@@ -1333,7 +1383,7 @@ function lockNote(){$('lockNote').innerHTML=locked?`<b>Date locked on ${fdate(cu
 });
 document.addEventListener('keydown',e=>{if(tab==='flow'&&locked&&e.key==='Escape')setLock(false)});
 const ro=new ResizeObserver(()=>{drawJ();drawY();if(tab==='flow')drawFlow()});ro.observe($('sJ'));ro.observe($('sY'));ro.observe($('sF'));ro.observe($('sL'));
-try{const s=JSON.parse(localStorage.getItem('feasV12'));if(s&&Array.isArray(s.V)&&s.G){V=s.V;G={...G,...s.G}}}catch(e){}
+try{const s=JSON.parse(localStorage.getItem('feasV13'));if(s&&Array.isArray(s.V)&&s.G){V=s.V;G={...G,...s.G}}}catch(e){}
 run();setTab();
 }
 </script>
